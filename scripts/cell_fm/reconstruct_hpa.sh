@@ -50,7 +50,7 @@ ulimit -c unlimited
 [ -z "${cell_image_ratio}" ] && cell_image_ratio=0.5
 
 # Training
-[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=/hpc/projects/group.huang/dihan.zheng/CELL-Diff2-Dev/pretrain_hpa/PT_VAE_HPA_KL1e-4_S256/checkpoint-50000/pytorch_model.bin
+[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_hpa/vae/checkpoint-50000/checkpoint-50000/pytorch_model.bin
 [ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_hpa/PT_HPA_CELLFM_Dev_NH8_all_S1_R10/checkpoint-10000/pytorch_model.bin
 
 # Evaluation

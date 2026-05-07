@@ -50,7 +50,7 @@ ulimit -c unlimited
 [ -z "${img_decoder_num_heads}" ] && img_decoder_num_heads=8
 
 # Training
-[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=/hpc/projects/group.huang/dihan.zheng/CELL-Diff2-Dev/pretrain_hpa/PT_VAE_HPA_KL1e-4_S256/checkpoint-50000/pytorch_model.bin
+[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_hpa/vae/checkpoint-50000/checkpoint-50000/pytorch_model.bin
 [ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_hpa_cellfm_split/PT_HPA_CELLFM_Dev_NH8_S2_R1/checkpoint-50000/pytorch_model.bin
 
 # Evaluation
