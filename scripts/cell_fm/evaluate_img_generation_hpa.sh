@@ -48,7 +48,7 @@ ulimit -c unlimited
 [ -z "${image_loss_coeff}" ] && image_loss_coeff=1.0
 
 # Training
-[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_hpa/vae/checkpoint-50000/checkpoint-50000/pytorch_model.bin
+[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_hpa/vae/checkpoint-50000/pytorch_model.bin
 [ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_hpa/PT_CELL-Diff-V4_R7-4_BOC320-1280_MNAH8_NHL8_DPS1_ZM0d5/checkpoint-30000
 [ -z "${learning_rate}" ] && learning_rate=3e-4
 [ -z "${weight_decay}" ] && weight_decay=0.0

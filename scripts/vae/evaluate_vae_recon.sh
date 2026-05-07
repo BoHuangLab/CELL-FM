@@ -1,11 +1,11 @@
 ulimit -c unlimited
 
 [ -z "${n_gpu}" ] && n_gpu=$(nvidia-smi -L | wc -l)
-[ -z "${output_dir}" ] && output_dir='./output/hpa/PT_VAE_HPA_KL1e-4_FP32_R2'
+[ -z "${output_dir}" ] && output_dir='./output/hpa/vae_recon/'
 
 # Dataset
 [ -z "${data_path}" ] && data_path='/hpc/reference/opencell/human_protein_atlas'
-[ -z "${split_key}" ] && split_key='all'
+[ -z "${split_key}" ] && split_key=all
 [ -z "${img_crop_size}" ] && img_crop_size=1024
 [ -z "${img_resize}" ] && img_resize=256
 
@@ -19,7 +19,7 @@ ulimit -c unlimited
 [ -z "${kl_loss_coeff}" ] && kl_loss_coeff=1.0
 
 # Training
-[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_hpa/vae/checkpoint-50000/checkpoint-50000/pytorch_model.bin
+[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_hpa/vae/checkpoint-50000/pytorch_model.bin
 [ -z "${learning_rate}" ] && learning_rate=3e-4
 [ -z "${weight_decay}" ] && weight_decay=0.0
 [ -z "${gradient_accumulation_steps}" ] && gradient_accumulation_steps=1

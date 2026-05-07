@@ -61,7 +61,7 @@ export WANDB_PROJECT=CELL-Diff2
 [ -z "${img_recon_loss_coeff}" ] && img_recon_loss_coeff=0
 
 # Training
-[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_hpa/vae/checkpoint-50000/checkpoint-50000/pytorch_model.bin
+[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_hpa/vae/checkpoint-50000/pytorch_model.bin
 [ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_hpa/PT_HPA_CELLFM_all_S1_R1/checkpoint-100000
 [ -z "${learning_rate}" ] && learning_rate=1e-4
 [ -z "${weight_decay}" ] && weight_decay=0
