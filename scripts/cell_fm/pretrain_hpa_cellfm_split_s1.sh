@@ -137,6 +137,7 @@ python -m torch.distributed.run $DISTRIBUTED_ARGS cell_fm/tasks/cell_fm/pretrain
             --max_steps $max_steps \
             --save_steps $save_steps \
             --seed 666666 \
+            --wandb \
 
             # --ft \
             # --ifresume \
