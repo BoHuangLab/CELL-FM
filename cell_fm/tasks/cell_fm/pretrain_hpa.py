@@ -40,7 +40,7 @@ def main(args) -> None:
         save_steps=args.save_steps, 
         seed=args.seed, 
         dataloader_num_workers=args.dataloader_num_workers, 
-        report_to='wandb', 
+        report_to='wandb' if args.wandb else 'none', 
         disable_tqdm=True, 
         remove_unused_columns=False, 
         overwrite_output_dir=True, 

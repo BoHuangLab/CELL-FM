@@ -16,6 +16,12 @@ def cli(*cfg_classes_and_funcs):
         @wraps(main)
         def wrapper():
             parser = ArgumentParser()
+            parser.add_argument(
+                "--wandb",
+                action="store_true",
+                default=False,
+                help="Enable Weights & Biases logging. Disabled by default.",
+            )
             cfg_classes = []
             cfg_funcs = []
             for cfg in cfg_classes_and_funcs:
@@ -35,12 +41,11 @@ def cli(*cfg_classes_and_funcs):
             env_init.set_env(args)
 
             if dist_utils.is_master_node():
-                wandb_api_key = os.getenv("WANDB_API_KEY")
+                if args.wandb:
+                    wandb_api_key = os.getenv("WANDB_API_KEY")
+                    if wandb_api_key:
+                        wandb.login(key=wandb_api_key)
 
-                if not wandb_api_key:
-                    logger.warning("Wandb not configured, logging to console only")
-                else:
-                    args.wandb = True
                     wandb_project = os.getenv("WANDB_PROJECT")
                     wandb_run_name = os.getenv("WANDB_RUN_NAME")
                     wandb_team = os.getenv("WANDB_TEAM")
@@ -56,6 +61,8 @@ def cli(*cfg_classes_and_funcs):
                         name=wandb_run_name,
                         config=args,
                     )
+                else:
+                    logger.info("Wandb disabled; pass --wandb to enable it")
 
             logger.success(
                 "====================================Start!===================================="
