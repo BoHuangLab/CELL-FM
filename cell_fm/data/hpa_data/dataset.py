@@ -212,7 +212,6 @@ class HPAImageOnlyDataset(Dataset):
         self.data_aug = self.args.data_aug
         self.img_resize = self.args.img_resize
         self.img_crop_size = self.args.img_crop_size
-        self.normalize = self.args.normalize
         
         self.antibody = sorted(self.meta_data['antibody'].unique().tolist())
         self.transform = self._build_transform()
@@ -273,10 +272,6 @@ class HPAImageOnlyDataset(Dataset):
         ER_img = to_tensor(data[:, :, 1])
         nucleus_img = to_tensor(data[:, :, 2])
         protein_img = to_tensor(data[:, :, 3])
-
-        if self.normalize:
-            protein_img = (protein_img - protein_img.min()) / max((protein_img.max() - protein_img.min()), 1e-6)
-            protein_img = torch.clamp(protein_img, 0, 1)
 
         img = torch.stack([protein_img, nucleus_img, microtubules_img, ER_img], dim=0)
         protein_img, nucleus_img, microtubules_img, ER_img = self.transform(img)
