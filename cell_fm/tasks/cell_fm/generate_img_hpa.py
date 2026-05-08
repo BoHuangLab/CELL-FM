@@ -17,8 +17,6 @@ from cell_fm.logging import logger
 
 from torchvision.utils import save_image
 from esm.utils import decoding
-from torch.utils.data import Subset
-
 
 def colorize_image(tensor, color):
     # Create a zero tensor with the same size as the input tensor but with three channels
@@ -60,7 +58,7 @@ def main(args) -> None:
     output_dir = Path(config.output_dir)
     output_dir = output_dir / config.split_key
 
-    batch_size = 256
+    batch_size = 2
 
     for i, data in enumerate(valset):
         protein_seq = data['protein_seq'].unsqueeze(0).to(device)

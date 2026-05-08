@@ -1,8 +1,6 @@
 ulimit -c unlimited
 [ -z "${n_gpu}" ] && n_gpu=$(nvidia-smi -L | wc -l)
-# [ -z "${output_dir}" ] && output_dir=./output/hpa/PT_HPA_CELLFM_Dev_NH8_S2_R1/seq2img
-# [ -z "${output_dir}" ] && output_dir=./output/hpa/PT_HPA_CELLFM_Dev_NH8_no_mae_R3/seq2img
-[ -z "${output_dir}" ] && output_dir=/hpc/reference/opencell/human_protein_atlas/seq2img/PT_HPA_CELLFM_Dev_NH8_S2_R1_50k
+[ -z "${output_dir}" ] && output_dir=./output/hpa/seq2img
 
 # Dataset
 [ -z "${data_path}" ] && data_path='/hpc/reference/opencell/human_protein_atlas'
@@ -51,11 +49,9 @@ ulimit -c unlimited
 [ -z "${img_decoder_dim_head}" ] && img_decoder_dim_head=64
 [ -z "${img_decoder_num_heads}" ] && img_decoder_num_heads=8
 
-[ -z "${cell_image_ratio}" ] && cell_image_ratio=0.5
-
 # Training
 [ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_hpa/vae/checkpoint-50000/pytorch_model.bin
-[ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_hpa_cellfm_split/PT_HPA_CELLFM_Dev_NH8_S2_R1/checkpoint-50000/pytorch_model.bin
+[ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_hpa/cellfm_seq2img/checkpoint-50000/pytorch_model.bin
 
 # Evaluation
 [ -z "${num_steps}" ] && num_steps=100
@@ -96,7 +92,6 @@ python cell_fm/tasks/cell_fm/generate_img_hpa.py \
             --img_decoder_hidden_size $img_decoder_hidden_size \
             --img_decoder_num_heads $img_decoder_num_heads \
             --img_decoder_dim_head $img_decoder_dim_head \
-            --cell_image_ratio $cell_image_ratio \
             --vae_loadcheck_path $vae_loadcheck_path \
             --loadcheck_path $loadcheck_path \
             --seed 6 \

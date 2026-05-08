@@ -51,9 +51,7 @@ ulimit -c unlimited
 
 # Training
 [ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_hpa/vae/checkpoint-50000/pytorch_model.bin
-# [ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_hpa/PT_HPA_CELLFM_Dev_NH8_all_S1_R1/checkpoint-60000/pytorch_model.bin
-# [ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_hpa/PT_HPA_CELLFM_Dev_NH8_all_S1_R11/checkpoint-100000/pytorch_model.bin
-[ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_hpa_cellfm_split/PT_HPA_CELLFM_Dev_NH8_S2_R1/checkpoint-50000/pytorch_model.bin
+[ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_hpa/cellfm_vs/checkpoint-100000/pytorch_model.bin
 
 # Evaluation
 [ -z "${num_steps}" ] && num_steps=100
