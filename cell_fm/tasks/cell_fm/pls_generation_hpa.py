@@ -66,15 +66,15 @@ def main(args) -> None:
     # Nucleoli 
     # chosen_data = valset.__getitem__(489)
     
-    # NLS
-    output_dir='./output/hpa/nls_generation/cell_fm_dev'
-    chosen_data = HPAAllImageDataset(args, split_key='all').__getitem__(8259)
-    index = 10
+    # # NLS
+    # output_dir='./output/hpa/nls_generation/cell_fm_dev'
+    # chosen_data = HPAAllImageDataset(args, split_key='all').__getitem__(8259)
+    # index = 10
 
     # NES
-    # output_dir='./output/hpa/nes_generation/cell_fm_dev'
-    # chosen_data = HPAAllImageDataset(args, split_key='test').__getitem__(24)
-    # index = 0
+    output_dir='./output/hpa/nes_generation/cell_fm_dev'
+    chosen_data = HPAAllImageDataset(args, split_key='test').__getitem__(24)
+    index = 0
 
     output_dir = Path(output_dir)
 
@@ -115,12 +115,10 @@ def main(args) -> None:
     cat_img = torch.cat([torch.full_like(chosen_nucleus_img, -1), chosen_protein_img, chosen_nucleus_img], dim=1)
     save_image(cat_img, output_dir / 'cat_img.png', normalize=True, value_range=(-1, 1))
 
-    # num_aas = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
     num_aas = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
-    # num_aas = [45, 50, 55]
 
     num_gen = 20
-    num_val = 1
+    num_val = 0
     gen_pos = "end"
 
     gen_signals = []
@@ -129,7 +127,6 @@ def main(args) -> None:
     # seq = 'MSKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKQHDFFKSAMPEGYVQERTIFFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYIMADKQKNGIKVNFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK'
     # seq = 'MPRQGSLGAAPPKVAPDSSETVVG'
     seq = 'MPSQGSLGAAPPEVAPDSSETEEG'
-    # seq = 'M'
 
     for num_aa in num_aas:
         if gen_pos == 'start':
