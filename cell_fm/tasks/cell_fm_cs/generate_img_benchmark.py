@@ -10,7 +10,7 @@ from pathlib import Path
 
 from cell_fm.criterions.cell_fm.unidiffuser import UniDiffCriterions
 from cell_fm.data.condenseq_data.dataset import CondenSeqAllImageDataset
-from cell_fm.models.cell_fm.cell_fm_cs_config import CELLFMConfig
+from cell_fm.models.cell_fm.cell_fm_cs_config import CELLFMCSConfig
 from cell_fm.models.cell_fm.cell_fm_cs_model import CELLFMCSModel
 from cell_fm.utils.cli_utils import cli
 from cell_fm.logging import logger
@@ -27,11 +27,11 @@ def save_tif(image, output_path):
     image = image.astype(np.uint16)
     tiff.imwrite(output_path, image, imagej=True)
 
-@cli(CELLFMConfig)
+@cli(CELLFMCSConfig)
 def main(args) -> None:
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    config = CELLFMConfig(**vars(args))
+    config = CELLFMCSConfig(**vars(args))
     model = CELLFMCSModel(config=config, loss_fn=UniDiffCriterions)
 
     model.to(device)

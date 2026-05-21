@@ -1,5 +1,5 @@
 ulimit -c unlimited
-[ -z "${output_dir}" ] && output_dir=/hpc/reference/opencell/condenseq/seq2img_benchmark/PT_CondenSeq_CELLFM_Dev_GFP_e_4_ignl_4_ignah_8_sc1_ic1_rc1_S2_R1_50k/
+[ -z "${output_dir}" ] && output_dir=output/condenseq/seq2img_benchmark/
 
 # Dataset
 [ -z "${data_path}" ] && data_path=/hpc/reference/opencell/condenseq
@@ -51,8 +51,8 @@ ulimit -c unlimited
 [ -z "${cell_image_ratio}" ] && cell_image_ratio=0.5
 
 # Training
-[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=/hpc/projects/group.huang/dihan.zheng/CELL-Diff2/finetune_condenseq/FT_VAE_CondenSeq_KL1e-4/checkpoint-50000/pytorch_model.bin
-[ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_condenseq_cellfm_split/PT_CondenSeq_CELLFM_Dev_GFP_e_4_ignl_4_ignah_8_sc1_ic1_rc1_S2_R1/checkpoint-50000/pytorch_model.bin
+[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_condenseq/vae/checkpoint-50000/pytorch_model.bin
+[ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_condenseq/cellfm_seq2img/checkpoint-50000/pytorch_model.bin
 
 # Evaluation
 [ -z "${num_steps}" ] && num_steps=100
