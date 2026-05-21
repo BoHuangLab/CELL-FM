@@ -1,6 +1,6 @@
 ulimit -c unlimited
 [ -z "${n_gpu}" ] && n_gpu=$(nvidia-smi -L | wc -l)
-[ -z "${output_dir}" ] && output_dir=./output/opencell/virtual_staining/
+[ -z "${output_dir}" ] && output_dir=/hpc/reference/opencell/opencell/2d_proj_256_crop_virtual_staining_all_remaining_proteins/
 
 # Dataset
 [ -z "${data_path}" ] && data_path='/hpc/reference/opencell/opencell'
@@ -56,7 +56,7 @@ ulimit -c unlimited
 [ -z "${num_steps}" ] && num_steps=100
 
 
-python cell_fm/tasks/cell_fm/virtual_staining_opencell.py \
+python cell_fm/tasks/cell_fm/virtual_staining_opencell_all_remaining_proteins.py \
             --output_dir $output_dir \
             --data_path $data_path \
             --split_key $split_key \
