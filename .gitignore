@@ -23,3 +23,6 @@ logs/
 
 pretrain*/
 finetune*/
+
+*.slurm
+slurm-*.out

@@ -18,7 +18,6 @@ from cell_fm.utils.cli_utils import cli
 from torchvision.utils import save_image
 import numpy as np
 import tifffile as tiff
-from tqdm import tqdm
 from esm.utils import encoding, decoding
 
 def save_tif(image, output_path):
@@ -26,7 +25,7 @@ def save_tif(image, output_path):
     tensor_np = tensor_np.clip(0, 1)
     tensor_np = np.round(tensor_np * 65535)
 
-    tensor_np = tensor_np.astype(np.uint16)    
+    tensor_np = tensor_np.astype(np.uint16)
     tiff.imwrite(output_path, tensor_np, imagej=True)
 
 def colorize_image(tensor, color):
@@ -125,7 +124,7 @@ def main(args) -> None:
 
     protein_seq = encoding.tokenize_sequence(protein_seq, vocab, True)
     protein_seq = protein_seq.unsqueeze(0).to(device)
-    
+
     save_file = output_dir / gene_name
     save_file.mkdir(parents=True, exist_ok=True)
 
