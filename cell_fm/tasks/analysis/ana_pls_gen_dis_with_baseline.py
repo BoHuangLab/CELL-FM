@@ -17,6 +17,9 @@ OUT_DIR.mkdir(exist_ok=True)
 
 AMINO_ACIDS = list("ACDEFGHIKLMNPQRSTVWY")
 
+AA_ORDER = ['R', 'H', 'K', 'D', 'E', 'S', 'T', 'N', 'Q', 'G',
+            'A', 'V', 'I', 'L', 'M', 'C', 'F', 'Y', 'W', 'P']
+
 
 def read_sequences(path: Path) -> list[str]:
     seqs = []
@@ -60,7 +63,7 @@ def print_table(sig_freq, base_freq, sig_label: str):
     print(f"\n── {sig_label} vs. baseline ──")
     print(header)
     print("-" * len(header))
-    for aa in AMINO_ACIDS:
+    for aa in AA_ORDER:
         b_p = base_freq[aa] * 100
         s_p = sig_freq[aa] * 100
         print(f"{aa:>3}  {b_p:>9.3f}  {s_p:>12.3f}  {s_p - b_p:>+9.3f}")
@@ -88,7 +91,7 @@ def plot_vs_baseline(
     base_tot = sum(base_counts.values())
 
     shifts = {aa: (sig_freq[aa] - base_freq[aa]) * 100 for aa in AMINO_ACIDS}
-    aas_sorted = sorted(AMINO_ACIDS, key=lambda aa: abs(shifts[aa]), reverse=True)
+    aas_sorted = AA_ORDER
     shift_vals = [shifts[aa] for aa in aas_sorted]
 
     # per-AA chi-squared: signal vs baseline

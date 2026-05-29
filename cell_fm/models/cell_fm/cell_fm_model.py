@@ -108,7 +108,7 @@ class CELLFMModel(PreTrainedModel):
             model_state_dict = self.state_dict()
             filtered_state_dict = {k: v for k, v in checkpoints_state.items() if k in model_state_dict and v.size() == model_state_dict[k].size()}
 
-            IncompatibleKeys = self.load_state_dict(filtered_state_dict, strict=True)
+            IncompatibleKeys = self.load_state_dict(filtered_state_dict, strict=False)
             IncompatibleKeys = IncompatibleKeys._asdict()
 
             missing_keys = []

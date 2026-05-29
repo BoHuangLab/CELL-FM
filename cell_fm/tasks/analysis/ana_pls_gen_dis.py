@@ -15,6 +15,8 @@ OUT_DIR.mkdir(exist_ok=True)
 
 AMINO_ACIDS = list("ACDEFGHIKLMNPQRSTVWY")
 
+AA_ORDER = ['R', 'H', 'K', 'D', 'E', 'S', 'T', 'N', 'Q', 'G', 
+      'A', 'V', 'I', 'L', 'M', 'C', 'F', 'Y', 'W', 'P']
 
 def read_sequences(path: Path) -> list[str]:
     seqs = []
@@ -167,7 +169,7 @@ def print_table(nls_freq, nes_freq):
     header = f"{'AA':>3}  {'NLS (%)':>9}  {'NES (%)':>9}  {'Δ (pp)':>9}"
     print("\n" + header)
     print("-" * len(header))
-    for aa in AMINO_ACIDS:
+    for aa in AA_ORDER:
         nls_p = nls_freq[aa] * 100
         nes_p = nes_freq[aa] * 100
         print(f"{aa:>3}  {nls_p:>9.3f}  {nes_p:>9.3f}  {nls_p - nes_p:>+9.3f}")
@@ -188,9 +190,8 @@ def plot_aa_diff(nls_freq: dict[str, float], nes_freq: dict[str, float],
     nls_tot = sum(nls_counts.values())
     nes_tot = sum(nes_counts.values())
 
-    # sort by absolute difference descending
     diffs = {aa: (nls_freq[aa] - nes_freq[aa]) * 100 for aa in AMINO_ACIDS}
-    aas_sorted = sorted(AMINO_ACIDS, key=lambda aa: abs(diffs[aa]), reverse=True)
+    aas_sorted = AA_ORDER
     diff_vals = [diffs[aa] for aa in aas_sorted]
 
     # per-AA chi-squared p-values
