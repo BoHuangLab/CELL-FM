@@ -17,6 +17,7 @@ from cell_fm.utils.cli_utils import cli
 
 from torchvision.utils import save_image
 from esm.utils import encoding
+from cell_fm.pipeline.accelerator.trainer import seed_everything
 
 
 def colorize_image(tensor, color):
@@ -88,26 +89,20 @@ def main(args) -> None:
     batch_size  = 64
 
     # ── sequence dict: sliding-window section on PRRSV ──────────────────────
-    wt_name = 'PRRSV-section-25'
+    wt_name = 'PRRSV-section-30-fix-seed'
     wt_seq  = 'MPNNNGKQQKRKKGDGQPVNQLCQMLGKIIAQQNQSRGKGPGKKNKKKNPEKPHFPLATEDDVRHHFTPSERQLCLSSIQTAFNQGAGTCTLSDSGRISYTVEFSLPTHHTVRLIRVTASPSA'
-    window  = 25
+    window  = 30
+
+    # # ── sequence dict: sliding-window section on TAT_HV1H2 ──────────────────────
+    # wt_name = 'TAT_HV1H2-section-25'
+    # wt_seq  = 'MEPVDPRLEPWKHPGSQPKTACTNCYCKKCCFHCQVCFITKALGISYGRKKRRQRRRAHQNSQTHQASLSKQPTSQPRGDPTGPKE'
+    # window  = 25
 
     seq_dict = {}
     for i in range(1, len(wt_seq) - window + 1):
         mut_seq  = "M" + wt_seq[i:i+window]
         mut_name = f"{i+1}-{i+window}"
         seq_dict[mut_name] = mut_seq
-
-    # # ── sequence dict: sliding-window section on PRRSV ──────────────────────
-    # wt_name = 'PRRSV-section-20-GSx3'
-    # wt_seq  = 'MPNNNGKQQKRKKGDGQPVNQLCQMLGKIIAQQNQSRGKGPGKKNKKKNPEKPHFPLATEDDVRHHFTPSERQLCLSSIQTAFNQGAGTCTLSDSGRISYTVEFSLPTHHTVRLIRVTASPSA'
-    # window  = 20
-
-    # seq_dict = {}
-    # for i in range(1, len(wt_seq) - window + 1):
-    #     mut_seq  = "M" + wt_seq[i:i+window] + "GGGGS" * 3
-    #     mut_name = f"{i+1}-{i+window}"
-    #     seq_dict[mut_name] = mut_seq
 
     # ── save anchor cell images once ─────────────────────────────────────────
     anchor_dir = output_dir / wt_name
@@ -121,6 +116,8 @@ def main(args) -> None:
         print(f"prot_seq: {prot_seq}")
         
         protein_seq = encoding.tokenize_sequence(prot_seq, vocab, True).unsqueeze(0).to(device)
+
+        seed_everything(args.seed)
 
         save_file = output_dir / wt_name / prot_name
         save_file.mkdir(parents=True, exist_ok=True)

@@ -51,7 +51,7 @@ ulimit -c unlimited
 # Training
 [ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=finetune_opencell/vae/checkpoint-50000/pytorch_model.bin
 # [ -z "${loadcheck_path}" ] && loadcheck_path=finetune_opencell/cellfm_vs/checkpoint-100000/pytorch_model.bin
-[ -z "${loadcheck_path}" ] && loadcheck_path=finetune_opencell/FT_OC_CELLFM_all_S1_R1/checkpoint-20000/pytorch_model.bin
+[ -z "${loadcheck_path}" ] && loadcheck_path=finetune_opencell/FT_OC_CELLFM_all_S2_R1/checkpoint-30000/pytorch_model.bin
 
 # Evaluation
 [ -z "${num_steps}" ] && num_steps=100

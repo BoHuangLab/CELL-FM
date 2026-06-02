@@ -2,8 +2,8 @@ ulimit -c unlimited
 [ -z "${n_gpu}" ] && n_gpu=$(nvidia-smi -L | wc -l)
 
 # Wandb
-export WANDB_RUN_NAME=FT_OC_CELLFM_Dev_NH8_clip_all_S2_R1
-export WANDB_PROJECT=CELL-Diff2
+export WANDB_RUN_NAME=FT_OC_CELLFM_all_S2_R1
+export WANDB_PROJECT=CELL-FM
 [ -z "${output_dir}" ] && output_dir=finetune_opencell/$WANDB_RUN_NAME
 # [ -z "${output_dir}" ] && output_dir='./PT_Test'
 
@@ -61,11 +61,11 @@ export WANDB_PROJECT=CELL-Diff2
 [ -z "${img_recon_loss_coeff}" ] && img_recon_loss_coeff=0
 
 # Training
-[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=finetune_opencell/FT_VAE_OC_256_KL1e-4_FP32_clip/checkpoint-50000/pytorch_model.bin
-[ -z "${loadcheck_path}" ] && loadcheck_path=finetune_opencell/FT_OC_CELLFM_Dev_NH8_clip_all_S1_R1/checkpoint-100000/pytorch_model.bin
+[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=finetune_opencell/vae/checkpoint-50000/pytorch_model.bin
+[ -z "${loadcheck_path}" ] && loadcheck_path=finetune_opencell/FT_OC_CELLFM_all_S1_R1/checkpoint-30000/pytorch_model.bin
 [ -z "${learning_rate}" ] && learning_rate=1e-4
 [ -z "${weight_decay}" ] && weight_decay=0.0
-[ -z "${gradient_accumulation_steps}" ] && gradient_accumulation_steps=2
+[ -z "${gradient_accumulation_steps}" ] && gradient_accumulation_steps=1
 [ -z "${per_device_train_batch_size}" ] && per_device_train_batch_size=16
 [ -z "${per_device_eval_batch_size}" ] && per_device_eval_batch_size=128
 
@@ -73,7 +73,7 @@ export WANDB_PROJECT=CELL-Diff2
 [ -z "${logging_dir}" ] && logging_dir=$output_dir
 [ -z "${logging_steps}" ] && logging_steps=100
 [ -z "${warmup_steps}" ] && warmup_steps=1000
-[ -z "${max_steps}" ] && max_steps=100000
+[ -z "${max_steps}" ] && max_steps=30000
 [ -z "${save_steps}" ] && save_steps=10000
 
 [ -z "${MASTER_PORT}" ] && MASTER_PORT=28855
@@ -137,6 +137,7 @@ python -m torch.distributed.run $DISTRIBUTED_ARGS cell_fm/tasks/cell_fm/finetune
             --max_steps $max_steps \
             --save_steps $save_steps \
             --seed 666666 \
+            --wandb \
             --ft \
 
             # --ft \

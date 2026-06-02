@@ -23,10 +23,10 @@ from PIL import Image
 BASE_DIR  = Path("/hpc/projects/group.huang/dihan.zheng/CELL-FM/output/opencell/virtual_staining_dict")
 MASK_PATH = BASE_DIR / "chosen_nucleus_img_masks.png"
 
-DATA_DIR      = BASE_DIR / "PRRSV-section-20"
-OUT_DIFF      = BASE_DIR / "PRRSV-section-20_intensity_diff.png"
-OUT_RATIO     = BASE_DIR / "PRRSV-section-20_intensity_ratio.png"
-OUT_RATIO_INV = BASE_DIR / "PRRSV-section-20_intensity_ratio_inv.png"
+DATA_DIR      = BASE_DIR / "PRRSV-section-25"
+OUT_DIFF      = BASE_DIR / "PRRSV-section-25_intensity_diff.png"
+OUT_RATIO     = BASE_DIR / "PRRSV-section-25_intensity_ratio.png"
+OUT_RATIO_INV = BASE_DIR / "PRRSV-section-25_intensity_ratio_inv.png"
 
 # ── infer experiment type from folder name ────────────────────────────────────
 _parts       = DATA_DIR.name.split("-")

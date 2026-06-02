@@ -21,16 +21,19 @@ from pathlib import Path
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.transforms import blended_transform_factory
 from PIL import Image
 
 BASE_DIR     = Path("/hpc/projects/group.huang/dihan.zheng/CELL-FM/output/hpa/virtual_staining_dict")
 NUCL_MASK_PATH = BASE_DIR / "chosen_nucleus_masks.png"
 CELL_MASK_PATH = BASE_DIR / "chosen_ER_masks.png"
 
-DATA_DIR       = BASE_DIR / "PRRSV-section-20-fix-seed"
-OUT_DIFF       = BASE_DIR / "PRRSV-section-20-fix-seed_intensity_diff.png"
-OUT_RATIO      = BASE_DIR / "PRRSV-section-20-fix-seed_intensity_ratio.png"
-OUT_RATIO_INV  = BASE_DIR / "PRRSV-section-20-fix-seed_intensity_ratio_inv.png"
+SEQUENCE = 'MPNNNGKQQKRKKGDGQPVNQLCQMLGKIIAQQNQSRGKGPGKKNKKKNPEKPHFPLATEDDVRHHFTPSERQLCLSSIQTAFNQGAGTCTLSDSGRISYTVEFSLPTHHTVRLIRVTASPSA'
+
+DATA_DIR       = BASE_DIR / "PRRSV-section-25-fix-seed"
+OUT_DIFF       = BASE_DIR / "PRRSV-section-25-fix-seed_intensity_diff.svg"
+OUT_RATIO      = BASE_DIR / "PRRSV-section-25-fix-seed_intensity_ratio.svg"
+OUT_RATIO_INV  = BASE_DIR / "PRRSV-section-25-fix-seed_intensity_ratio_inv.svg"
 
 # ── infer experiment type ─────────────────────────────────────────────────────
 _parts       = DATA_DIR.name.split("-")
@@ -68,6 +71,17 @@ def parse_start(name: str, exp_type: str) -> int:
         return int(name.removeprefix("del").split("-")[0])
 
 
+def name_to_mid_aa(name: str, exp_type: str, sequence: str) -> str:
+    if exp_type == "section":
+        start, end = map(int, name.split("-"))
+    else:
+        stripped = name.removeprefix("del")
+        start, end = map(int, stripped.split("-"))
+    mid = (start + end) // 2
+    idx = mid - 1   # 1-indexed position → 0-indexed
+    return sequence[idx] if 0 <= idx < len(sequence) else "?"
+
+
 def main():
     nucl_mask = load_binary_mask(NUCL_MASK_PATH)
     cell_mask = load_binary_mask(CELL_MASK_PATH)
@@ -103,56 +117,51 @@ def main():
 
     if EXP_TYPE == "section":
         xlabel = f"Section window (start-end, size={WINDOW_SIZE})"
-        title  = f"{PROTEIN_NAME} sliding-window section: nucleus vs. cytoplasm intensity"
-        color  = "#4CAF50"
+        title  = f"{PROTEIN_NAME}: Nuclear vs. Cytoplasmic Intensity Across Protein Sequence Windows"
+        color  = "#000000"
     else:
         xlabel = f"Deletion window (start-end, size={WINDOW_SIZE})"
-        title  = f"{PROTEIN_NAME} sliding-window deletion: nucleus vs. cytoplasm intensity"
+        title  = f"{PROTEIN_NAME}: Nuclear vs. Cytoplasmic Intensity Across Protein Sequence Windows (deletions)"
         color  = "#2196F3"
 
-    plt.rcParams.update({
-        "font.family": "sans-serif",
-        "font.size": 12,
-        "axes.labelsize": 13,
-        "xtick.labelsize": 9,
-        "ytick.labelsize": 11,
-    })
+    names     = [r["name"] for r in results]
+    aa_labels = [name_to_mid_aa(r["name"], EXP_TYPE, SEQUENCE) for r in results]
+    tick_gap  = 10                                     # visual units between ticks
+    xs        = [i * tick_gap for i in range(len(results))]
 
-    starts = [r["start"] for r in results]
-    names  = [r["name"]  for r in results]
-    rng    = np.random.default_rng(0)
-
-    def save_scatter_plot(scores_key: str, means_key: str, ylabel: str, hline: float,
-                          out_path: Path, ylim: tuple | None = None):
-        fig, ax = plt.subplots(figsize=(16, 5), dpi=150)
+    def save_line_plot(means_key: str, ylabel: str, hline: float,
+                       out_path: Path, ylim: tuple | None = None):
+        fig, ax = plt.subplots(figsize=(25, 6), dpi=150)
         means_vals = [r[means_key] for r in results]
-        for r in results:
-            jitter = rng.uniform(-0.3, 0.3, size=len(r[scores_key]))
-            ax.scatter(r["start"] + jitter, r[scores_key],
-                       s=10, color=color, alpha=0.35, zorder=2, linewidths=0)
-        ax.plot(starts, means_vals, color=color, linewidth=1.2, zorder=3)
-        ax.scatter(starts, means_vals, s=30, color=color, zorder=4, label="median per window")
-        ax.axhline(hline, color="#888888", linewidth=0.8, linestyle="--")
-        ax.set_xticks(starts)
-        ax.set_xticklabels(names, rotation=90)
-        ax.set_xlabel(xlabel)
-        ax.set_ylabel(ylabel)
-        ax.set_title(title)
+        ax.plot(xs, means_vals, color=color, linewidth=1.2, zorder=3)
+        ax.scatter(xs, means_vals, s=50, color=color, zorder=4, label="median per window")
+        # ax.axhline(hline, color="#888888", linewidth=0.8, linestyle="--")
+        ax.set_xticks(xs)
+        ax.set_xticklabels(names, rotation=90, fontsize=15)
+        ax.margins(x=0.01)
+        trans = blended_transform_factory(ax.transData, ax.transAxes)
+        for x, aa in zip(xs, aa_labels):
+            ax.text(x, -0.2, aa, transform=trans, ha='center', va='top',
+                    fontsize=15, rotation=0)
+        ax.tick_params(axis='y', labelsize=18)
+        # ax.set_xlabel(xlabel, fontsize=20)
+        ax.set_ylabel(ylabel, fontsize=20)
+        ax.set_title(title, fontsize=25)
         ax.spines[["top", "right"]].set_visible(False)
         ax.yaxis.grid(True, linestyle="--", linewidth=0.5, color="#eeeeee", zorder=0)
-        ax.legend(frameon=False)
+        # ax.legend(frameon=False)
         if ylim is not None:
             ax.set_ylim(ylim)
         fig.tight_layout()
-        fig.savefig(out_path, dpi=200, bbox_inches="tight", transparent=True)
+        fig.savefig(out_path, bbox_inches="tight", transparent=True)
         plt.close(fig)
         print(f"Plot saved: {out_path}")
 
-    save_scatter_plot("diffs",      "median_diff",        "Median intensity\n(nucleus − cytoplasm)",    0,   OUT_DIFF)
-    save_scatter_plot("ratios",     "median_ratio",     "Median intensity ratio\n(nucleus / cytoplasm)", 1.0, OUT_RATIO,
-                      ylim=(0, 10))
-    save_scatter_plot("inv_ratios", "median_inv_ratio", "Median intensity ratio\n(cytoplasm / nucleus)", 1.0, OUT_RATIO_INV,
-                      ylim=(0, 5))
+    save_line_plot("median_diff",      "Median intensity\n(nucleus − cytoplasm)",     0,   OUT_DIFF)
+    save_line_plot("median_ratio",     "Median intensity ratio\n(nucleus / cytoplasm)", 1.0, OUT_RATIO,
+                   ylim=(0, 6))
+    save_line_plot("median_inv_ratio", "Median intensity ratio\n(cytoplasm / nucleus)", 1.0, OUT_RATIO_INV,
+                   ylim=(0, 5))
 
 
 if __name__ == "__main__":
