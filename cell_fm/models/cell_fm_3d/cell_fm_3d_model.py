@@ -17,7 +17,7 @@ from cell_fm.pipeline.utils import CELLFMOutput
 from cell_fm.logging import logger
 
 from .cell_fm_3d_config import CELLFM3DConfig
-from .modules import PatchEmbed3D, SD3Transformer3DModel
+from .modules import SD3Transformer3DModel
 
 
 class CELLFM3DModel(PreTrainedModel):
