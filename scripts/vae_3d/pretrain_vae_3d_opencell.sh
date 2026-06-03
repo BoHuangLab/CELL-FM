@@ -11,9 +11,9 @@ export WANDB_PROJECT=CELL-FM-3D
 [ -z "${split_key}" ] && split_key='all'
 
 # Model
-[ -z "${num_down_blocks}" ] && num_down_blocks=3
+[ -z "${num_down_blocks}" ] && num_down_blocks=2
 [ -z "${latent_channels}" ] && latent_channels=4
-[ -z "${vae_block_out_channels}" ] && vae_block_out_channels='32,64,128'
+[ -z "${vae_block_out_channels}" ] && vae_block_out_channels='64,128'
 [ -z "${input_spatial_size}" ] && input_spatial_size='48,192,192'
 [ -z "${norm_num_groups}" ] && norm_num_groups=32
 [ -z "${layers_per_block}" ] && layers_per_block=2
@@ -26,7 +26,7 @@ export WANDB_PROJECT=CELL-FM-3D
 [ -z "${learning_rate}" ] && learning_rate=3e-4
 [ -z "${weight_decay}" ] && weight_decay=0.0
 [ -z "${gradient_accumulation_steps}" ] && gradient_accumulation_steps=1
-[ -z "${per_device_train_batch_size}" ] && per_device_train_batch_size=8
+[ -z "${per_device_train_batch_size}" ] && per_device_train_batch_size=4
 [ -z "${per_device_eval_batch_size}" ] && per_device_eval_batch_size=2
 
 [ -z "${num_train_epochs}" ] && num_train_epochs=5000

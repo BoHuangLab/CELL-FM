@@ -19,14 +19,14 @@ export WANDB_PROJECT=CELL-FM-3D
 [ -z "${patch_size}" ] && patch_size=8
 [ -z "${num_layers}" ] && num_layers=12
 [ -z "${num_heads}" ] && num_heads=8
-[ -z "${hidden_dim}" ] && hidden_dim=768
-[ -z "${mlp_dim}" ] && mlp_dim=3072
+[ -z "${hidden_dim}" ] && hidden_dim=512
+[ -z "${mlp_dim}" ] && mlp_dim=2048
 
 # Training
 [ -z "${learning_rate}" ] && learning_rate=3e-4
 [ -z "${weight_decay}" ] && weight_decay=0.0
 [ -z "${gradient_accumulation_steps}" ] && gradient_accumulation_steps=1
-[ -z "${per_device_train_batch_size}" ] && per_device_train_batch_size=48
+[ -z "${per_device_train_batch_size}" ] && per_device_train_batch_size=64
 [ -z "${per_device_eval_batch_size}" ] && per_device_eval_batch_size=4
 
 [ -z "${num_train_epochs}" ] && num_train_epochs=500000
