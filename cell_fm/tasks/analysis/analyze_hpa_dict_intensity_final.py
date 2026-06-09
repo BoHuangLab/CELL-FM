@@ -29,6 +29,8 @@ NUCL_MASK_PATH = BASE_DIR / "chosen_nucleus_masks.png"
 CELL_MASK_PATH = BASE_DIR / "chosen_ER_masks.png"
 
 SEQUENCE = 'MPNNNGKQQKRKKGDGQPVNQLCQMLGKIIAQQNQSRGKGPGKKNKKKNPEKPHFPLATEDDVRHHFTPSERQLCLSSIQTAFNQGAGTCTLSDSGRISYTVEFSLPTHHTVRLIRVTASPSA'
+NLS1 = [10, 13]
+NLS2 = [41, 47]
 
 DATA_DIR       = BASE_DIR / "PRRSV-section-25-fix-seed"
 OUT_DIFF       = BASE_DIR / "PRRSV-section-25-fix-seed_intensity_diff.svg"
@@ -140,9 +142,18 @@ def main():
         ax.set_xticklabels(names, rotation=90, fontsize=15)
         ax.margins(x=0.01)
         trans = blended_transform_factory(ax.transData, ax.transAxes)
-        for x, aa in zip(xs, aa_labels):
-            ax.text(x, -0.2, aa, transform=trans, ha='center', va='top',
-                    fontsize=15, rotation=0)
+        # for x, aa in zip(xs, aa_labels):
+        #     ax.text(x, -0.2, aa, transform=trans, ha='center', va='top',
+        #             fontsize=18, rotation=0)
+        
+        x_gap = xs[1] - xs[0]
+        full_seq_xs = np.arange(xs[0] - x_gap * (WINDOW_SIZE//2 + 1), xs[-1] + x_gap * (WINDOW_SIZE//2), x_gap)
+
+        for pos, (x, aa) in enumerate(zip(full_seq_xs, SEQUENCE), start=1):
+            in_nls = (NLS1[0] <= pos <= NLS1[1]) or (NLS2[0] <= pos <= NLS2[1])
+            ax.text(x, -0.3, aa, transform=trans, ha='center', va='top',
+                    fontsize=18, rotation=0, color="#E53935" if in_nls else "#000000")
+
         ax.tick_params(axis='y', labelsize=18)
         # ax.set_xlabel(xlabel, fontsize=20)
         ax.set_ylabel(ylabel, fontsize=20)

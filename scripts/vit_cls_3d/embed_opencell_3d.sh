@@ -1,10 +1,10 @@
 ulimit -c unlimited
 
-[ -z "${output_dir}" ] && output_dir=./output/opencell_3d/embedding/
+[ -z "${output_dir}" ] && output_dir=./output/opencell_3d/embedding/PT_OC3D_ViT_cls_R2_90k
 
 # Dataset
-[ -z "${data_path}" ] && data_path='/hpc/reference/opencell/opencell'
-[ -z "${split_key}" ] && split_key='all'
+[ -z "${data_path}" ] && data_path=/hpc/reference/opencell/opencell
+[ -z "${split_key}" ] && split_key=all
 
 # Input
 [ -z "${input_spatial_size}" ] && input_spatial_size='48,192,192'
@@ -19,7 +19,7 @@ ulimit -c unlimited
 [ -z "${mlp_dim}" ] && mlp_dim=2048
 
 # Inference
-[ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_opencell_3d/PT_OC3D_ViT_cls/checkpoint-20000/pytorch_model.bin
+[ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_opencell_3d/PT_OC3D_ViT_cls_R2/checkpoint-90000/pytorch_model.bin
 [ -z "${per_device_eval_batch_size}" ] && per_device_eval_batch_size=8
 
 python cell_fm/tasks/vit_cls_3d/embed_opencell_3d.py \

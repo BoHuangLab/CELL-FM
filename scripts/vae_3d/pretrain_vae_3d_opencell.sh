@@ -2,7 +2,7 @@ ulimit -c unlimited
 [ -z "${n_gpu}" ] && n_gpu=$(nvidia-smi -L | wc -l)
 
 # Wandb
-export WANDB_RUN_NAME=PT_VAE3D_OC_192_KL1e-4
+export WANDB_RUN_NAME=PT_VAE3D_OC_192_KL1e-4_R2
 export WANDB_PROJECT=CELL-FM-3D
 [ -z "${output_dir}" ] && output_dir=pretrain_opencell_3d/$WANDB_RUN_NAME
 
@@ -23,6 +23,7 @@ export WANDB_PROJECT=CELL-FM-3D
 [ -z "${kl_loss_coeff}" ] && kl_loss_coeff=1e-4
 
 # Training
+[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_opencell_3d/PT_VAE3D_OC_192_KL1e-4/checkpoint-100000/pytorch_model.bin
 [ -z "${learning_rate}" ] && learning_rate=3e-4
 [ -z "${weight_decay}" ] && weight_decay=0.0
 [ -z "${gradient_accumulation_steps}" ] && gradient_accumulation_steps=1
@@ -33,7 +34,7 @@ export WANDB_PROJECT=CELL-FM-3D
 [ -z "${logging_dir}" ] && logging_dir=$output_dir
 [ -z "${logging_steps}" ] && logging_steps=100
 [ -z "${warmup_steps}" ] && warmup_steps=1000
-[ -z "${max_steps}" ] && max_steps=100000
+[ -z "${max_steps}" ] && max_steps=50000
 [ -z "${save_steps}" ] && save_steps=10000
 
 [ -z "${MASTER_PORT}" ] && MASTER_PORT=21829
@@ -56,6 +57,7 @@ python -m torch.distributed.run $DISTRIBUTED_ARGS cell_fm/tasks/vae_3d/pretrain_
             --layers_per_block $layers_per_block \
             --recon_loss_coeff $recon_loss_coeff \
             --kl_loss_coeff $kl_loss_coeff \
+            --vae_loadcheck_path $vae_loadcheck_path \
             --learning_rate $learning_rate \
             --weight_decay $weight_decay \
             --gradient_accumulation_steps $gradient_accumulation_steps \
@@ -69,8 +71,8 @@ python -m torch.distributed.run $DISTRIBUTED_ARGS cell_fm/tasks/vae_3d/pretrain_
             --save_steps $save_steps \
             --seed 6 \
             --wandb \
+            --ft \
 
-            # --vae_loadcheck_path $vae_loadcheck_path \
             # --ft \
             # --bf16 \
             # --ifresume \

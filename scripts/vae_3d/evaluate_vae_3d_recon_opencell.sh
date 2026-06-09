@@ -19,7 +19,7 @@ ulimit -c unlimited
 [ -z "${kl_loss_coeff}" ] && kl_loss_coeff=1e-4
 
 # Training (required by VAE3DConfig / cli but not used during inference)
-[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_opencell_3d/PT_VAE3D_OC_192_KL1e-4/checkpoint-40000/pytorch_model.bin
+[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_opencell_3d/PT_VAE3D_OC_192_KL1e-4_R2/checkpoint-50000/pytorch_model.bin
 [ -z "${learning_rate}" ] && learning_rate=3e-4
 [ -z "${weight_decay}" ] && weight_decay=0.0
 [ -z "${gradient_accumulation_steps}" ] && gradient_accumulation_steps=1

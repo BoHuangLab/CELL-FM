@@ -119,16 +119,19 @@ class CELLFM3DModel(PreTrainedModel):
         return protein_img_latent
 
     def forward(self, batched_data, **kwargs):
-        protein_seq_masked = batched_data['protein_seq_masked']
+        protein_seq = batched_data['protein_seq']
         protein_img_latent = self.prepare_data(batched_data)
 
         t, x0, x1 = self.transport.sample(protein_img_latent)
         t, xt, ut = self.transport.path_sampler.plan(t, x0, x1)
 
-        img_output = self.net(xt, protein_seq_masked, t)
+        img_output = self.net(xt, protein_seq, t)
         loss = self.transport.training_losses(img_output, x0, xt, ut, t)["loss"].mean()
 
-        return CELLFMOutput(loss=loss)
+        log_output = {
+            "train_loss": loss.item(),
+        }
+        return CELLFMOutput(loss=loss, log_output=log_output)
 
     @torch.no_grad()
     def sequence_to_image(self, protein_seq: torch.Tensor, num_steps: int = 100) -> torch.Tensor:
