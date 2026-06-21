@@ -37,6 +37,11 @@ class CELLFM3DConfig(PretrainedConfig):
     patch_d: int = 4                          # depth patch size in latent space
     patch_size: int = 8                       # H/W patch size in latent space
 
+    # Cell image conditioning
+    cell_image: str = 'nucl'
+    cond_out_channels: str = '64'
+    cell_image_ratio: float = 1.0
+
     # Sequence / ESM
     esm_embedding: str = 'esmc_300m'
     esm_fixed_embedding: bool = True
@@ -89,3 +94,7 @@ class CELLFM3DConfig(PretrainedConfig):
         self.input_spatial_size = kwargs.get("input_spatial_size", self.input_spatial_size)
         if not isinstance(self.input_spatial_size, list):
             self.input_spatial_size = [int(s) for s in self.input_spatial_size.split(',')]
+
+        self.cond_out_channels = kwargs.get("cond_out_channels", self.cond_out_channels)
+        if not isinstance(self.cond_out_channels, list):
+            self.cond_out_channels = [int(c) for c in self.cond_out_channels.split(',')]

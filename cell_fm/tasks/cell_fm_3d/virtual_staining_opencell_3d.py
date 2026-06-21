@@ -69,10 +69,10 @@ def main(args) -> None:
             protein_seq_batch = protein_seq.repeat(n, 1)
 
             # Generate 3D protein volume: (B, 1, D, H, W) in [-1, 1]
-            sample = model.sequence_to_image(protein_seq_batch, num_steps=args.num_steps)
+            nucleus_batch = chosen_nucleus_img.repeat(n, 1, 1, 1, 1)  # (B, 1, D, H, W)
+            sample = model.sequence_to_image(protein_seq_batch, nucleus_batch, num_steps=args.num_steps)
 
             # Stack fixed nucleus + generated protein: (B, 2, D, H, W)
-            nucleus_batch = chosen_nucleus_img.repeat(n, 1, 1, 1, 1)  # (B, 1, D, H, W)
             cat_img = torch.cat([nucleus_batch, sample], dim=1)        # (B, 2, D, H, W)
 
             for j in range(n):

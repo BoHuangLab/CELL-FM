@@ -27,8 +27,11 @@ class SD3Transformer3DModel(nn.Module):
         num_attention_heads: int,
         joint_attention_dim: int,
         pooled_projection_dim: int,
+        in_channels: int = None,
     ):
         super().__init__()
+        if in_channels is None:
+            in_channels = latent_channels
         inner_dim = num_attention_heads * attention_head_dim
 
         # Build SD3 with a minimal 2-D config to instantiate its transformer blocks.
@@ -55,7 +58,7 @@ class SD3Transformer3DModel(nn.Module):
 
         # 3-D patch embedding and output projection
         self.pos_embed = PatchEmbed3D(
-            depth, height, width, patch_d, patch_hw, latent_channels, inner_dim
+            depth, height, width, patch_d, patch_hw, in_channels, inner_dim
         )
         self.proj_out = nn.Linear(
             inner_dim, patch_d * patch_hw * patch_hw * latent_channels

@@ -17,7 +17,7 @@ from cell_fm.pipeline.utils import CELLFMOutput
 from cell_fm.logging import logger
 
 from .cell_fm_3d_config import CELLFM3DConfig
-from .modules import SD3Transformer3DModel
+from .modules import SD3Transformer3DModel, CondConvNet3D
 
 
 class CELLFM3DModel(PreTrainedModel):
@@ -116,16 +116,23 @@ class CELLFM3DModel(PreTrainedModel):
     def prepare_data(self, batched_data):
         protein_img = batched_data['protein_img']               # (B, 1, D, H, W)
         protein_img_latent = self.vae.encode(protein_img).sample()
-        return protein_img_latent
+
+        nucleus_img = batched_data['nucleus_img']               # (B, 1, D, H, W)
+        if self.config.cell_image == 'nucl':
+            cell_img = nucleus_img
+        else:
+            raise ValueError(f"Cell image type '{self.config.cell_image}' is not supported")
+
+        return protein_img_latent, cell_img
 
     def forward(self, batched_data, **kwargs):
         protein_seq = batched_data['protein_seq']
-        protein_img_latent = self.prepare_data(batched_data)
+        protein_img_latent, cell_img = self.prepare_data(batched_data)
 
         t, x0, x1 = self.transport.sample(protein_img_latent)
         t, xt, ut = self.transport.path_sampler.plan(t, x0, x1)
 
-        img_output = self.net(xt, protein_seq, t)
+        img_output = self.net(xt, cell_img, protein_seq, t)
         loss = self.transport.training_losses(img_output, x0, xt, ut, t)["loss"].mean()
 
         log_output = {
@@ -134,7 +141,7 @@ class CELLFM3DModel(PreTrainedModel):
         return CELLFMOutput(loss=loss, log_output=log_output)
 
     @torch.no_grad()
-    def sequence_to_image(self, protein_seq: torch.Tensor, num_steps: int = 100) -> torch.Tensor:
+    def sequence_to_image(self, protein_seq: torch.Tensor, cell_img: torch.Tensor, num_steps: int = 100) -> torch.Tensor:
         device = protein_seq.device
         B = protein_seq.shape[0]
 
@@ -151,7 +158,7 @@ class CELLFM3DModel(PreTrainedModel):
         sample_fn = self.transport_sampler.sample_ode(num_steps=num_steps)
 
         def model_fn(xt, t):
-            return self.net(xt, protein_seq, t)
+            return self.net(xt, cell_img, protein_seq, t)
 
         latent = sample_fn(noise, model_fn)[-1]
         return self.vae.decode(latent).sample
@@ -168,6 +175,12 @@ class CELLFM3D(nn.Module):
         h_lat = H // (2 ** n_ds)
         w_lat = W // (2 ** n_ds)
 
+        # Cell image conditioning
+        self.cond_conv = CondConvNet3D(
+            config.in_channels * len(config.cell_image.split(',')),
+            config.cond_out_channels,
+        )
+
         # Image generator (3-D SD3 transformer)
         self.img_generator = SD3Transformer3DModel(
             depth=d_lat,
@@ -176,6 +189,7 @@ class CELLFM3D(nn.Module):
             patch_d=config.patch_d,
             patch_hw=config.patch_size,
             latent_channels=config.latent_channels,
+            in_channels=config.latent_channels + config.cond_out_channels[-1],
             num_layers=config.img_generator_num_layers,
             attention_head_dim=config.attention_head_dim,
             num_attention_heads=config.num_attention_heads,
@@ -205,6 +219,7 @@ class CELLFM3D(nn.Module):
     def forward(
         self,
         protein_img_latent: torch.Tensor,
+        cell_img: torch.Tensor,
         protein_seq: torch.Tensor,
         time: torch.Tensor,
     ) -> torch.Tensor:
@@ -214,8 +229,11 @@ class CELLFM3D(nn.Module):
 
         pooled = seq_embeds.mean(dim=1)                                         # (B, hidden)
 
+        cell_img_conv = self.cond_conv(cell_img)                                # (B, cond_C, d, h, w)
+        concat_img = torch.cat([protein_img_latent, cell_img_conv], dim=1)      # (B, latent+cond_C, d, h, w)
+
         return self.img_generator(
-            hidden_states=protein_img_latent,
+            hidden_states=concat_img,
             encoder_hidden_states=seq_embeds,
             pooled_projections=pooled,
             timestep=time,
