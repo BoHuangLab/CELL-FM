@@ -2,7 +2,7 @@ ulimit -c unlimited
 [ -z "${n_gpu}" ] && n_gpu=$(nvidia-smi -L | wc -l)
 
 # Wandb
-export WANDB_RUN_NAME=PT_VAE3D_OC_192_nd3_lc16_KL1e-4_R1
+export WANDB_RUN_NAME=PT_VAE3D_OC_192_nd3_lc16_KL1e-5_R1
 export WANDB_PROJECT=CELL-FM-3D
 [ -z "${output_dir}" ] && output_dir=pretrain_opencell_3d/$WANDB_RUN_NAME
 
@@ -20,10 +20,10 @@ export WANDB_PROJECT=CELL-FM-3D
 
 # Loss
 [ -z "${recon_loss_coeff}" ] && recon_loss_coeff=1.0
-[ -z "${kl_loss_coeff}" ] && kl_loss_coeff=1e-4
+[ -z "${kl_loss_coeff}" ] && kl_loss_coeff=1e-5
 
 # Training
-[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_opencell_3d/PT_VAE3D_OC_192_nd3_lc8_KL1e-4_R1/checkpoint-50000/pytorch_model.bin
+[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_opencell_3d/PT_VAE3D_OC_192_nd3_lc16_KL1e-4_R1/checkpoint-100000/pytorch_model.bin
 [ -z "${learning_rate}" ] && learning_rate=3e-4
 [ -z "${weight_decay}" ] && weight_decay=0.0
 [ -z "${gradient_accumulation_steps}" ] && gradient_accumulation_steps=1

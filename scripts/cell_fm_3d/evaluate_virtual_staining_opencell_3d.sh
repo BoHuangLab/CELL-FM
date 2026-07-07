@@ -13,9 +13,9 @@ ulimit -c unlimited
 [ -z "${prediction}" ] && prediction=velocity
 
 # VAE (3D, pretrained)
-[ -z "${num_down_blocks}" ] && num_down_blocks=3
-[ -z "${latent_channels}" ] && latent_channels=16
-[ -z "${vae_block_out_channels}" ] && vae_block_out_channels='64,128,256'
+[ -z "${num_down_blocks}" ] && num_down_blocks=2
+[ -z "${latent_channels}" ] && latent_channels=4
+[ -z "${vae_block_out_channels}" ] && vae_block_out_channels='64,128'
 [ -z "${input_spatial_size}" ] && input_spatial_size='48,192,192'
 [ -z "${norm_num_groups}" ] && norm_num_groups=32
 [ -z "${layers_per_block}" ] && layers_per_block=2
@@ -31,16 +31,19 @@ ulimit -c unlimited
 
 # Cell image conditioning
 [ -z "${cell_image}" ] && cell_image='nucl'
-[ -z "${cond_out_channels}" ] && cond_out_channels='32,64'
+[ -z "${cond_out_channels}" ] && cond_out_channels='32'
+
+# Latent downsample / upsample around SD3
+[ -z "${down_channels}" ] && down_channels=64
 
 # Image generator (SD3-3D)
-[ -z "${img_generator_num_layers}" ] && img_generator_num_layers=8
+[ -z "${img_generator_num_layers}" ] && img_generator_num_layers=16
 [ -z "${attention_head_dim}" ] && attention_head_dim=64
 [ -z "${num_attention_heads}" ] && num_attention_heads=18
 
 # Checkpoint paths
-[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_opencell_3d/PT_VAE3D_OC_192_nd3_lc16_KL1e-4_R1/checkpoint-100000/pytorch_model.bin
-[ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_opencell_3d/PT_OC3D_CELLFM3D_R4/checkpoint-50000/pytorch_model.bin
+[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_opencell_3d/PT_VAE3D_OC_192_KL1e-4/checkpoint-50000/pytorch_model.bin
+[ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_opencell_3d/PT_OC3D_CELLFM3D_R9/checkpoint-100000/pytorch_model.bin
 
 # Evaluation
 [ -z "${per_device_eval_batch_size}" ] && per_device_eval_batch_size=1
@@ -64,6 +67,7 @@ python cell_fm/tasks/cell_fm_3d/virtual_staining_opencell_3d.py \
             --patch_size $patch_size \
             --cell_image $cell_image \
             --cond_out_channels $cond_out_channels \
+            --down_channels $down_channels \
             --esm_embedding $esm_embedding \
             --encoder_hidden_size $encoder_hidden_size \
             --max_protein_sequence_len $max_protein_sequence_len \

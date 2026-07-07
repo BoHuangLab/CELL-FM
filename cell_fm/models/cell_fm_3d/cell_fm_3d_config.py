@@ -53,6 +53,9 @@ class CELLFM3DConfig(PretrainedConfig):
     attention_head_dim: int = 64
     num_attention_heads: int = 16
 
+    # Latent downsample (before SD3) / upsample (after SD3)
+    down_channels: int = 64
+
     # Checkpoint paths
     vae_loadcheck_path: str = '.'
     loadcheck_path: str = '.'

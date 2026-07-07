@@ -1,15 +1,15 @@
 ulimit -c unlimited
 
-[ -z "${output_dir}" ] && output_dir='./output/opencell_3d/PT_VAE3D_OC_192_nd3_lc16_KL1e-4_R1'
+[ -z "${output_dir}" ] && output_dir='./output/opencell_3d/latent_std_PT_VAE3D_OC_192_KL1e-4'
 
 # Dataset
 [ -z "${data_path}" ] && data_path='/hpc/reference/opencell/opencell'
 [ -z "${split_key}" ] && split_key='all'
 
-# Model
-[ -z "${num_down_blocks}" ] && num_down_blocks=3
-[ -z "${latent_channels}" ] && latent_channels=16
-[ -z "${vae_block_out_channels}" ] && vae_block_out_channels='64,128,256'
+# Model (must match PT_VAE3D_OC_192_KL1e-4/checkpoint-50000/config.json)
+[ -z "${num_down_blocks}" ] && num_down_blocks=2
+[ -z "${latent_channels}" ] && latent_channels=4
+[ -z "${vae_block_out_channels}" ] && vae_block_out_channels='64,128'
 [ -z "${input_spatial_size}" ] && input_spatial_size='48,192,192'
 [ -z "${norm_num_groups}" ] && norm_num_groups=32
 [ -z "${layers_per_block}" ] && layers_per_block=2
@@ -18,13 +18,15 @@ ulimit -c unlimited
 [ -z "${recon_loss_coeff}" ] && recon_loss_coeff=1.0
 [ -z "${kl_loss_coeff}" ] && kl_loss_coeff=1e-4
 
-# Training (required by VAE3DConfig / cli but not used during inference)
-[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_opencell_3d/PT_VAE3D_OC_192_nd3_lc16_KL1e-5_R1/checkpoint-70000/pytorch_model.bin
+# Checkpoint
+[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_opencell_3d/PT_VAE3D_OC_192_KL1e-4/checkpoint-50000/pytorch_model.bin
+
+# Training args (required by VAE3DConfig / cli but not used during inference)
 [ -z "${learning_rate}" ] && learning_rate=3e-4
 [ -z "${weight_decay}" ] && weight_decay=0.0
 [ -z "${gradient_accumulation_steps}" ] && gradient_accumulation_steps=1
-[ -z "${per_device_train_batch_size}" ] && per_device_train_batch_size=2
-[ -z "${per_device_eval_batch_size}" ] && per_device_eval_batch_size=2
+[ -z "${per_device_train_batch_size}" ] && per_device_train_batch_size=8
+[ -z "${per_device_eval_batch_size}" ] && per_device_eval_batch_size=8
 
 [ -z "${num_train_epochs}" ] && num_train_epochs=5000
 [ -z "${logging_dir}" ] && logging_dir=$output_dir
@@ -33,7 +35,7 @@ ulimit -c unlimited
 [ -z "${max_steps}" ] && max_steps=100000
 [ -z "${save_steps}" ] && save_steps=10000
 
-python cell_fm/tasks/vae_3d/evaluate_vae_3d_recon_opencell.py \
+python cell_fm/tasks/vae_3d/compute_latent_std_opencell_3d.py \
     --output_dir $output_dir \
     --data_path $data_path \
     --split_key $split_key \
@@ -59,5 +61,3 @@ python cell_fm/tasks/vae_3d/evaluate_vae_3d_recon_opencell.py \
     --save_steps $save_steps \
     --seed 6 \
     --infer \
-
-    # --bf16 \

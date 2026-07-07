@@ -175,26 +175,43 @@ class CELLFM3D(nn.Module):
         h_lat = H // (2 ** n_ds)
         w_lat = W // (2 ** n_ds)
 
+        # Downsampled spatial size SD3 operates on (latent compressed by another 2x)
+        d_sd, h_sd, w_sd = d_lat // 2, h_lat // 2, w_lat // 2
+
         # Cell image conditioning
         self.cond_conv = CondConvNet3D(
             config.in_channels * len(config.cell_image.split(',')),
             config.cond_out_channels,
         )
 
-        # Image generator (3-D SD3 transformer)
+        # Latent downsample: (latent + cond) at (d_lat,h_lat,w_lat) -> down_channels at (d_sd,h_sd,w_sd)
+        self.latent_downsample = nn.Conv3d(
+            config.latent_channels + config.cond_out_channels[-1],
+            config.down_channels,
+            kernel_size=2, stride=2, padding=0,
+        )
+
+        # Image generator (3-D SD3 transformer) operating on the downsampled volume
         self.img_generator = SD3Transformer3DModel(
-            depth=d_lat,
-            height=h_lat,
-            width=w_lat,
+            depth=d_sd,
+            height=h_sd,
+            width=w_sd,
             patch_d=config.patch_d,
             patch_hw=config.patch_size,
-            latent_channels=config.latent_channels,
-            in_channels=config.latent_channels + config.cond_out_channels[-1],
+            latent_channels=config.down_channels,
+            in_channels=config.down_channels,
             num_layers=config.img_generator_num_layers,
             attention_head_dim=config.attention_head_dim,
             num_attention_heads=config.num_attention_heads,
             joint_attention_dim=config.encoder_hidden_size,
             pooled_projection_dim=config.encoder_hidden_size,
+        )
+
+        # Latent upsample: down_channels at (d_sd,h_sd,w_sd) -> latent_channels at (d_lat,h_lat,w_lat)
+        self.latent_upsample = nn.ConvTranspose3d(
+            config.down_channels,
+            config.latent_channels,
+            kernel_size=2, stride=2, padding=0,
         )
 
         # Sequence embedding
@@ -229,12 +246,15 @@ class CELLFM3D(nn.Module):
 
         pooled = seq_embeds.mean(dim=1)                                         # (B, hidden)
 
-        cell_img_conv = self.cond_conv(cell_img)                                # (B, cond_C, d, h, w)
-        concat_img = torch.cat([protein_img_latent, cell_img_conv], dim=1)      # (B, latent+cond_C, d, h, w)
+        cell_img_conv = self.cond_conv(cell_img)                                # (B, cond_C, d_lat, h_lat, w_lat)
+        x = torch.cat([protein_img_latent, cell_img_conv], dim=1)               # (B, latent+cond_C, d_lat, h_lat, w_lat)
+        x = self.latent_downsample(x)                                           # (B, down_C, d_sd, h_sd, w_sd)
 
-        return self.img_generator(
-            hidden_states=concat_img,
+        x = self.img_generator(
+            hidden_states=x,
             encoder_hidden_states=seq_embeds,
             pooled_projections=pooled,
             timestep=time,
-        )
+        )                                                                      # (B, down_C, d_sd, h_sd, w_sd)
+
+        return self.latent_upsample(x)                                          # (B, latent, d_lat, h_lat, w_lat)
