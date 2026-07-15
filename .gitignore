@@ -26,3 +26,5 @@ finetune*/
 
 *.slurm
 slurm-*.out
+
+.vscode/
