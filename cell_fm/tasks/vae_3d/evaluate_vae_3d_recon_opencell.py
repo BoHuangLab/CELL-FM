@@ -30,7 +30,8 @@ def to_uint16(vol: np.ndarray) -> np.ndarray:
 def main(args) -> None:
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    gene_name = 'TUBB4B'  # Microtubules
+    # gene_name = 'TUBB4B'  # Microtubules
+    gene_name = 'AAMP'  # Microtubules
     valset = OpenCell3DCropImageOnlyDataset(args, split_key="all")
     # Filter to target gene using the flat img_paths / gene_name_labels lists
     mask = [g == gene_name for g in valset.gene_name_labels]

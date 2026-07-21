@@ -11,6 +11,7 @@ from cell_fm.models.cell_fm_3d.cell_fm_3d_model import CELLFM3DModel
 from cell_fm.utils.cli_utils import cli
 from transformers import TrainingArguments
 from cell_fm.pipeline.cd_accelerator.accelerator import CDTrainer
+from cell_fm.pipeline.ema import EMACallback, add_ema_callback
 from cell_fm.logging.loggers import CELLFMLoggingCallback
 from cell_fm.logging import logger
 
@@ -55,6 +56,19 @@ def main(args) -> None:
         data_collator=trainset.collate,
         callbacks=[CELLFMLoggingCallback()],
     )
+
+    if args.use_ema:
+        add_ema_callback(
+            trainer,
+            EMACallback(
+                decay=args.ema_decay,
+                use_ema_warmup=args.ema_warmup,
+                inv_gamma=args.ema_inv_gamma,
+                power=args.ema_power,
+                update_after_step=args.ema_update_after_step,
+            ),
+        )
+
     trainer.train(resume_from_checkpoint=args.ifresume)
 
 

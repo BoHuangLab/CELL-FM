@@ -184,9 +184,19 @@ class CELLFM3D(nn.Module):
             config.cond_out_channels,
         )
 
-        # Latent downsample: (latent + cond) at (d_lat,h_lat,w_lat) -> down_channels at (d_sd,h_sd,w_sd)
+        # UNet-style skip around SD3: in_conv lifts the high-res (latent + cond) feature to
+        # skip_channels; that feature is carried past the transformer and fused back by out_conv.
+        self.use_latent_skip = config.use_latent_skip
+        cat_channels = config.latent_channels + config.cond_out_channels[-1]
+        if config.use_latent_skip:
+            self.in_conv = nn.Conv3d(cat_channels, config.skip_channels, kernel_size=3, padding=1)
+            down_in = up_out = config.skip_channels
+        else:
+            down_in, up_out = cat_channels, config.latent_channels
+
+        # Latent downsample: high-res feature at (d_lat,h_lat,w_lat) -> down_channels at (d_sd,h_sd,w_sd)
         self.latent_downsample = nn.Conv3d(
-            config.latent_channels + config.cond_out_channels[-1],
+            down_in,
             config.down_channels,
             kernel_size=2, stride=2, padding=0,
         )
@@ -207,12 +217,18 @@ class CELLFM3D(nn.Module):
             pooled_projection_dim=config.encoder_hidden_size,
         )
 
-        # Latent upsample: down_channels at (d_sd,h_sd,w_sd) -> latent_channels at (d_lat,h_lat,w_lat)
+        # Latent upsample: down_channels at (d_sd,h_sd,w_sd) -> up_out at (d_lat,h_lat,w_lat)
         self.latent_upsample = nn.ConvTranspose3d(
             config.down_channels,
-            config.latent_channels,
+            up_out,
             kernel_size=2, stride=2, padding=0,
         )
+
+        # Fuse the upsampled feature with the high-res skip and project to latent_channels
+        if config.use_latent_skip:
+            self.out_conv = nn.Conv3d(
+                2 * config.skip_channels, config.latent_channels, kernel_size=3, padding=1
+            )
 
         # Sequence embedding
         self.initialize_protein_sequence_embedding(config)
@@ -248,6 +264,10 @@ class CELLFM3D(nn.Module):
 
         cell_img_conv = self.cond_conv(cell_img)                                # (B, cond_C, d_lat, h_lat, w_lat)
         x = torch.cat([protein_img_latent, cell_img_conv], dim=1)               # (B, latent+cond_C, d_lat, h_lat, w_lat)
+
+        skip = None
+        if self.use_latent_skip:
+            x = skip = self.in_conv(x)                                          # (B, skip_C, d_lat, h_lat, w_lat)
         x = self.latent_downsample(x)                                           # (B, down_C, d_sd, h_sd, w_sd)
 
         x = self.img_generator(
@@ -257,4 +277,9 @@ class CELLFM3D(nn.Module):
             timestep=time,
         )                                                                      # (B, down_C, d_sd, h_sd, w_sd)
 
-        return self.latent_upsample(x)                                          # (B, latent, d_lat, h_lat, w_lat)
+        x = self.latent_upsample(x)                                             # (B, up_out, d_lat, h_lat, w_lat)
+
+        if self.use_latent_skip:
+            x = self.out_conv(torch.cat([x, skip], dim=1))                      # (B, latent, d_lat, h_lat, w_lat)
+
+        return x

@@ -36,6 +36,9 @@ ulimit -c unlimited
 # Latent downsample / upsample around SD3
 [ -z "${down_channels}" ] && down_channels=128
 
+# UNet skip around SD3
+[ -z "${skip_channels}" ] && skip_channels=64
+
 # Image generator (SD3-3D)
 [ -z "${img_generator_num_layers}" ] && img_generator_num_layers=18
 [ -z "${attention_head_dim}" ] && attention_head_dim=64
@@ -43,7 +46,8 @@ ulimit -c unlimited
 
 # Checkpoint paths
 [ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_opencell_3d/PT_VAE3D_OC_192_KL1e-4/checkpoint-50000/pytorch_model.bin
-[ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_opencell_3d/PT_OC3D_CELLFM3D_R11/checkpoint-80000/pytorch_model.bin
+# [ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_opencell_3d/PT_OC3D_CELLFM3D_R14/checkpoint-50000/pytorch_model.bin
+[ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_opencell_3d/PT_OC3D_CELLFM3D_R14/checkpoint-50000/ema_pytorch_model.bin
 
 # Evaluation
 [ -z "${per_device_eval_batch_size}" ] && per_device_eval_batch_size=1
@@ -68,6 +72,8 @@ python cell_fm/tasks/cell_fm_3d/virtual_staining_opencell_3d.py \
             --cell_image $cell_image \
             --cond_out_channels $cond_out_channels \
             --down_channels $down_channels \
+            --use_latent_skip \
+            --skip_channels $skip_channels \
             --esm_embedding $esm_embedding \
             --encoder_hidden_size $encoder_hidden_size \
             --max_protein_sequence_len $max_protein_sequence_len \

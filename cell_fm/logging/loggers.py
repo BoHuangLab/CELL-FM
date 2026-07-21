@@ -115,6 +115,7 @@ class CELLFMLoggingCallback(TrainerCallback):
             "grad_norm": "{:.4f}",
             "learning_rate": "{:.7f}",
             "epoch": "{:.4f}",
+            "ema_decay": "{:.6f}",
         }
 
         parts = []

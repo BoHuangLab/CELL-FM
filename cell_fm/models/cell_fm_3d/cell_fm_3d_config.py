@@ -56,6 +56,18 @@ class CELLFM3DConfig(PretrainedConfig):
     # Latent downsample (before SD3) / upsample (after SD3)
     down_channels: int = 64
 
+    # UNet skip around SD3
+    use_latent_skip: bool = False
+    skip_channels: int = 64
+
+    # EMA
+    use_ema: bool = False
+    ema_decay: float = 0.9999
+    ema_warmup: bool = True
+    ema_inv_gamma: float = 1.0
+    ema_power: float = 0.6666666666666666
+    ema_update_after_step: int = 0
+
     # Checkpoint paths
     vae_loadcheck_path: str = '.'
     loadcheck_path: str = '.'
