@@ -2,7 +2,7 @@ ulimit -c unlimited
 [ -z "${n_gpu}" ] && n_gpu=$(nvidia-smi -L | wc -l)
 
 # Wandb
-export WANDB_RUN_NAME=PT_OC3D_CELLFM3D_R14
+export WANDB_RUN_NAME=PT_OC3D_CELLFM3D_R18
 export WANDB_PROJECT=CELL-FM-3D
 [ -z "${output_dir}" ] && output_dir=pretrain_opencell_3d/$WANDB_RUN_NAME
 
@@ -50,13 +50,13 @@ export WANDB_PROJECT=CELL-FM-3D
 [ -z "${ema_update_after_step}" ] && ema_update_after_step=0
 
 # Image generator (SD3-3D)
-[ -z "${img_generator_num_layers}" ] && img_generator_num_layers=18
+[ -z "${img_generator_num_layers}" ] && img_generator_num_layers=24
 [ -z "${attention_head_dim}" ] && attention_head_dim=64
 [ -z "${num_attention_heads}" ] && num_attention_heads=18
 
 # Checkpoint paths
 [ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_opencell_3d/PT_VAE3D_OC_192_KL1e-4/checkpoint-50000/pytorch_model.bin
-[ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_opencell_3d/PT_OC3D_CELLFM3D_R13/checkpoint-100000/ema_pytorch_model.bin
+[ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_opencell_3d/PT_OC3D_CELLFM3D_R17/checkpoint-70000/ema_pytorch_model.bin
 
 # Training
 [ -z "${learning_rate}" ] && learning_rate=3e-4
@@ -125,7 +125,7 @@ python -m torch.distributed.run $DISTRIBUTED_ARGS cell_fm/tasks/cell_fm_3d/pretr
             --warmup_steps $warmup_steps \
             --max_steps $max_steps \
             --save_steps $save_steps \
-            --seed 6 \
+            --seed 66666 \
             --wandb \
             --ft \
             --bf16 \

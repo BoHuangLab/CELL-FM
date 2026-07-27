@@ -67,14 +67,16 @@ def main(args) -> None:
     # chosen_data = valset.__getitem__(489)
     
     # # NLS
-    # output_dir='./output/hpa/nls_generation/cell_fm_dev'
-    # chosen_data = HPAAllImageDataset(args, split_key='all').__getitem__(8259)
-    # index = 10
+    output_dir='./output/hpa/nls_generation/cell_fm_dev'
+    chosen_data = HPAAllImageDataset(args, split_key='all').__getitem__(8259)
+    index = 10
 
     # NES
-    output_dir='./output/hpa/nes_generation/cell_fm_dev'
-    chosen_data = HPAAllImageDataset(args, split_key='test').__getitem__(24)
-    index = 0
+    # output_dir='./output/hpa/nes_generation/cell_fm_dev'
+    # chosen_data = HPAAllImageDataset(args, split_key='test').__getitem__(24)
+    # index = 0
+
+    # print(chosen_data['gene_name'])
 
     output_dir = Path(output_dir)
 

@@ -69,6 +69,74 @@ def print_table(sig_freq, base_freq, sig_label: str):
         print(f"{aa:>3}  {b_p:>9.3f}  {s_p:>12.3f}  {s_p - b_p:>+9.3f}")
 
 
+def compute_shifts_pvals(sig_freq, base_freq, sig_counts, base_counts, aas):
+    sig_tot  = sum(sig_counts.values())
+    base_tot = sum(base_counts.values())
+
+    shift_vals = [(sig_freq[aa] - base_freq[aa]) * 100 for aa in aas]
+
+    p_vals = []
+    for aa in aas:
+        _, p, _, _ = chi2_contingency(np.array([
+            [sig_counts[aa],  sig_tot  - sig_counts[aa]],
+            [base_counts[aa], base_tot - base_counts[aa]],
+        ]))
+        p_vals.append(p)
+
+    return shift_vals, p_vals
+
+
+def plot_nls_nes_combined(
+    nls_freq, nes_freq, base_freq,
+    nls_counts, nes_counts, base_counts,
+    out_path: Path,
+):
+    plt.rcParams.update({
+        "font.family": "sans-serif",
+        "font.size": 25,
+        "axes.titlesize": 30,
+        "axes.labelsize": 25,
+        "xtick.labelsize": 25,
+        "ytick.labelsize": 25,
+    })
+
+    aas = AA_ORDER
+    y = np.arange(len(aas))
+
+    panels = [
+        ("NLS", "#2196F3", nls_freq, nls_counts),
+        ("NES", "#F44336", nes_freq, nes_counts),
+    ]
+
+    fig, axes = plt.subplots(
+        1, 2, figsize=(10, 15), dpi=150, sharey=True,
+    )
+
+    for ax, (label, color, sig_freq, sig_counts) in zip(axes, panels):
+        shift_vals, _ = compute_shifts_pvals(
+            sig_freq, base_freq, sig_counts, base_counts, aas)
+        bar_colors = [color if v > 0 else "#aaaaaa" for v in shift_vals]
+
+        ax.barh(y, shift_vals, color=bar_colors, height=0.65, zorder=2)
+        ax.axvline(0, color="#888888", linewidth=0.8)
+        ax.set_xlabel(label, color=color)
+        ax.spines[["top", "right"]].set_visible(False)
+        ax.xaxis.grid(True, linestyle="--", linewidth=0.5, color="#eeeeee", zorder=0)
+        ax.tick_params(axis="y", length=0)
+
+    axes[0].set_yticks(y)
+    axes[0].set_yticklabels(aas)
+    axes[0].set_ylabel("Amino acid")
+    axes[0].invert_yaxis()  # keep AA_ORDER top-to-bottom
+
+    fig.suptitle("Δ frequency (pp) vs. proteome baseline")
+
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=300, bbox_inches="tight", transparent=True)
+    plt.close(fig)
+    print(f"Plot saved to: {out_path}")
+
+
 def plot_vs_baseline(
     sig_freq:   dict[str, float],
     base_freq:  dict[str, float],
@@ -163,6 +231,10 @@ def main():
     plot_vs_baseline(nes_freq, base_freq, nes_counts, base_counts,
                      label="NES", color="#F44336",
                      out_path=OUT_DIR / "nes_vs_baseline.png")
+
+    plot_nls_nes_combined(nls_freq, nes_freq, base_freq,
+                          nls_counts, nes_counts, base_counts,
+                          out_path=OUT_DIR / "nls_nes_vs_baseline.png")
 
 
 if __name__ == "__main__":
