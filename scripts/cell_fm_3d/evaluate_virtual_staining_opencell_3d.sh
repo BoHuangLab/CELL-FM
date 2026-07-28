@@ -47,7 +47,7 @@ ulimit -c unlimited
 # Checkpoint paths
 [ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_opencell_3d/PT_VAE3D_OC_192_KL1e-4/checkpoint-50000/pytorch_model.bin
 # [ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_opencell_3d/PT_OC3D_CELLFM3D_R14/checkpoint-100000/pytorch_model.bin
-[ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_opencell_3d/PT_OC3D_CELLFM3D_R18/checkpoint-40000/ema_pytorch_model.bin
+[ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_opencell_3d/PT_OC3D_CELLFM3D_R19/checkpoint-40000/ema_pytorch_model.bin
 
 # Evaluation
 [ -z "${per_device_eval_batch_size}" ] && per_device_eval_batch_size=1
