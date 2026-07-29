@@ -2,7 +2,7 @@ ulimit -c unlimited
 [ -z "${n_gpu}" ] && n_gpu=$(nvidia-smi -L | wc -l)
 
 # Wandb
-export WANDB_RUN_NAME=FT_OC_CELLFM_all_S1_R1
+export WANDB_RUN_NAME=FT_OC_CELLFM_all_S1
 export WANDB_PROJECT=CELL-FM
 [ -z "${output_dir}" ] && output_dir=finetune_opencell/$WANDB_RUN_NAME
 # [ -z "${output_dir}" ] && output_dir='./PT_Test'
@@ -27,7 +27,7 @@ export WANDB_PROJECT=CELL-FM
 [ -z "${latent_channels}" ] && latent_channels=4
 [ -z "${vae_block_out_channels}" ] && vae_block_out_channels='128,256,512'
 
-## CELL-Diff
+## CELL-FM
 [ -z "${img_mask_ratio}" ] && img_mask_ratio=0.5
 [ -z "${cond_out_channels}" ] && cond_out_channels='32,64'
 [ -z "${sample_size}" ] && sample_size=64
@@ -65,7 +65,7 @@ export WANDB_PROJECT=CELL-FM
 [ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_hpa/cellfm_seq2img/checkpoint-50000/pytorch_model.bin
 [ -z "${learning_rate}" ] && learning_rate=3e-4
 [ -z "${weight_decay}" ] && weight_decay=0.0
-[ -z "${gradient_accumulation_steps}" ] && gradient_accumulation_steps=1
+[ -z "${gradient_accumulation_steps}" ] && gradient_accumulation_steps=4
 [ -z "${per_device_train_batch_size}" ] && per_device_train_batch_size=16
 [ -z "${per_device_eval_batch_size}" ] && per_device_eval_batch_size=128
 

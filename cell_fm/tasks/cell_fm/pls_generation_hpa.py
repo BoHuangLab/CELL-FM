@@ -14,7 +14,7 @@ from cell_fm.data.hpa_data.dataset import HPAAllImageDataset
 from cell_fm.models.cell_fm.cell_fm_config import CELLFMConfig
 from cell_fm.models.cell_fm.cell_fm_model import CELLFMModel
 from cell_fm.utils.cli_utils import cli
-from cell_fm.logging import logger
+from dataclasses import dataclass, field
 
 from torchvision.utils import save_image
 import csv
@@ -40,12 +40,18 @@ def save_colored_image(tensor, filename, color):
     colored_tensor = colorize_image(tensor, color)
     save_image(colored_tensor, filename, normalize=True, value_range=(0, 1))
 
-@cli(CELLFMConfig)
+
+@dataclass
+class Args:
+    pls_type : str = 'nls'  # 'nls', 'nes'
+    num_aas: list = field(default_factory=lambda: [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25])
+    num_gen: int = 20
+    gen_pos: str = 'end'  # 'start', 'end'
+
+
+@cli(CELLFMConfig, Args)
 def main(args) -> None:
-    if not torch.cuda.is_available():
-        device = "cpu"
-    else:
-        device = "cuda"
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     config = CELLFMConfig(**vars(args))
 
@@ -57,26 +63,14 @@ def main(args) -> None:
     model.to(device)
     model.eval()
 
-    # output_dir = Path(config.output_dir)
-
-    # MT
-    # valset = HPALMDBDataset(args, split_key='virtual_staining')
-    # chosen_data = valset.__getitem__(16)
-
-    # Nucleoli 
-    # chosen_data = valset.__getitem__(489)
+    output_dir = Path(config.output_dir)
     
-    # # NLS
-    output_dir='./output/hpa/nls_generation/cell_fm_dev'
-    chosen_data = HPAAllImageDataset(args, split_key='all').__getitem__(8259)
-    index = 10
-
-    # NES
-    # output_dir='./output/hpa/nes_generation/cell_fm_dev'
-    # chosen_data = HPAAllImageDataset(args, split_key='test').__getitem__(24)
-    # index = 0
-
-    # print(chosen_data['gene_name'])
+    if config.pls_type == 'nls':
+        chosen_data = HPAAllImageDataset(args, split_key='all').__getitem__(8259)
+        index = 10
+    elif config.pls_type == 'nes':
+        chosen_data = HPAAllImageDataset(args, split_key='test').__getitem__(24)
+        index = 0
 
     output_dir = Path(output_dir)
 
@@ -117,16 +111,15 @@ def main(args) -> None:
     cat_img = torch.cat([torch.full_like(chosen_nucleus_img, -1), chosen_protein_img, chosen_nucleus_img], dim=1)
     save_image(cat_img, output_dir / 'cat_img.png', normalize=True, value_range=(-1, 1))
 
-    num_aas = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+    num_aas = args.num_aas
 
-    num_gen = 20
+    num_gen = args.num_gen
     num_val = 0
-    gen_pos = "end"
+    gen_pos = args.gen_pos
 
     gen_signals = []
 
-    # GFP
-    # seq = 'MSKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTLKFICTTGKLPVPWPTLVTTFSYGVQCFSRYPDHMKQHDFFKSAMPEGYVQERTIFFKDDGNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYIMADKQKNGIKVNFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLLEFVTAAGITHGMDELYK'
+    # Prompt sequence for generation
     # seq = 'MPRQGSLGAAPPKVAPDSSETVVG'
     seq = 'MPSQGSLGAAPPEVAPDSSETEEG'
 
@@ -135,7 +128,6 @@ def main(args) -> None:
             masked_seq = "M" + "<mask>" * num_aa + seq[1:]
         elif gen_pos == 'end':
             masked_seq = seq + "<mask>" * num_aa
-            # masked_seq = "M" + "<mask>" * num_aa
 
         print(masked_seq)
 

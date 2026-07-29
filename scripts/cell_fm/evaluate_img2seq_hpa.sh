@@ -1,13 +1,15 @@
 ulimit -c unlimited
 [ -z "${n_gpu}" ] && n_gpu=$(nvidia-smi -L | wc -l)
-[ -z "${output_dir}" ] && output_dir=.
+
+[ -z "${pls_type}" ] && pls_type=nes # 'nls', 'nes'
+[ -z "${output_dir}" ] && output_dir=./output/hpa/pls_generation/$pls_type
 
 # Dataset
 [ -z "${data_path}" ] && data_path=/hpc/reference/opencell/human_protein_atlas
-[ -z "${split_key}" ] && split_key='test'
+[ -z "${split_key}" ] && split_key='cellfm_test'
 [ -z "${phase}" ] && phase='test'  # 'train', 'test'
 
-[ -z "${img_resize}" ] && img_resize=256
+[ -z "${img_resize}" ] && img_resize=512
 [ -z "${img_crop_size}" ] && img_crop_size=1024
 [ -z "${seq_zero_mask_ratio}" ] && seq_zero_mask_ratio=0.0
 [ -z "${cell_image}" ] && cell_image='nucl,er,mt'
@@ -23,10 +25,10 @@ ulimit -c unlimited
 [ -z "${latent_channels}" ] && latent_channels=4
 [ -z "${vae_block_out_channels}" ] && vae_block_out_channels='128,256,512'
 
-## CELL-Diff
+## CELL-FM
 [ -z "${img_mask_ratio}" ] && img_mask_ratio=0
 [ -z "${cond_out_channels}" ] && cond_out_channels='32,64'
-[ -z "${sample_size}" ] && sample_size=64
+[ -z "${sample_size}" ] && sample_size=128
 [ -z "${esm_embedding}" ] && esm_embedding='esmc_600m'
 [ -z "${encoder_hidden_size}" ] && encoder_hidden_size=1152
 [ -z "${max_protein_sequence_len}" ] && max_protein_sequence_len=2048
@@ -35,13 +37,13 @@ ulimit -c unlimited
 [ -z "${dim_head}" ] && dim_head=64
 [ -z "${dropout}" ] && dropout=0
 [ -z "${final_dropout}" ] && final_dropout=0
-[ -z "${encoder_patch_size}" ] && encoder_patch_size=4
+[ -z "${encoder_patch_size}" ] && encoder_patch_size=8
 
 ### Image generator
 [ -z "${img_generator_num_layers}" ] && img_generator_num_layers=8
-[ -z "${img_generator_patch_size}" ] && img_generator_patch_size=2
+[ -z "${img_generator_patch_size}" ] && img_generator_patch_size=4
 [ -z "${attention_head_dim}" ] && attention_head_dim=64
-[ -z "${num_attention_heads}" ] && num_attention_heads=18
+[ -z "${num_attention_heads}" ] && num_attention_heads=8
 
 ### Image decoder
 [ -z "${img_decoder_num_hidden_layers}" ] && img_decoder_num_hidden_layers=4
@@ -50,11 +52,8 @@ ulimit -c unlimited
 [ -z "${img_decoder_num_heads}" ] && img_decoder_num_heads=8
 
 # Training
-[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_hpa/vae/checkpoint-50000/pytorch_model.bin
-[ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_hpa/cellfm_vs/checkpoint-100000/pytorch_model.bin
-
-# Evaluation
-[ -z "${num_steps}" ] && num_steps=100
+[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_hpa/vae_512/checkpoint-50000/pytorch_model.bin
+[ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_hpa/cellfm_img2seq/pytorch_model.bin
 
 
 python cell_fm/tasks/cell_fm/pls_generation_hpa.py \
@@ -94,6 +93,6 @@ python cell_fm/tasks/cell_fm/pls_generation_hpa.py \
             --img_decoder_dim_head $img_decoder_dim_head \
             --vae_loadcheck_path $vae_loadcheck_path \
             --loadcheck_path $loadcheck_path \
+            --pls_type $pls_type \
             --seed 66 \
-            --num_steps $num_steps \
             --infer \

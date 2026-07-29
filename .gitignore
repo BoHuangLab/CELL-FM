@@ -30,3 +30,7 @@ slurm-*.out
 .vscode/
 
 analysis/
+
+cell_fm/tasks_local/
+
+scripts_local/

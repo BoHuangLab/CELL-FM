@@ -1,6 +1,6 @@
 ulimit -c unlimited
 [ -z "${n_gpu}" ] && n_gpu=$(nvidia-smi -L | wc -l)
-[ -z "${output_dir}" ] && output_dir=./output/opencell/virtual_staining/
+[ -z "${output_dir}" ] && output_dir=/hpc/reference/opencell/opencell/2d_proj_256_crop_dataset_virtual_staining_same_nucl
 
 # Dataset
 [ -z "${data_path}" ] && data_path='/hpc/reference/opencell/opencell'
@@ -22,8 +22,8 @@ ulimit -c unlimited
 [ -z "${latent_channels}" ] && latent_channels=4
 [ -z "${vae_block_out_channels}" ] && vae_block_out_channels='128,256,512'
 
-## CELL-Diff
-[ -z "${img_mask_ratio}" ] && img_mask_ratio=0.5
+## CELL-FM
+[ -z "${img_mask_ratio}" ] && img_mask_ratio=0
 [ -z "${cond_out_channels}" ] && cond_out_channels='32,64'
 [ -z "${sample_size}" ] && sample_size=64
 [ -z "${esm_embedding}" ] && esm_embedding='esmc_600m'
@@ -49,8 +49,8 @@ ulimit -c unlimited
 [ -z "${img_decoder_num_heads}" ] && img_decoder_num_heads=8
 
 # Training
-[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=finetune_opencell/vae/checkpoint-50000/pytorch_model.bin
-[ -z "${loadcheck_path}" ] && loadcheck_path=finetune_opencell/cellfm_vs/checkpoint-100000/pytorch_model.bin
+[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=finetune_opencell/FT_VAE_OC_256_KL1e-4_FP32_clip/checkpoint-50000/pytorch_model.bin
+[ -z "${loadcheck_path}" ] && loadcheck_path=finetune_opencell/FT_OC_CELLFM_Dev_NH8_clip_all_S2_R1/checkpoint-100000/pytorch_model.bin
 
 # Evaluation
 [ -z "${num_steps}" ] && num_steps=100
@@ -92,6 +92,6 @@ python cell_fm/tasks/cell_fm/virtual_staining_opencell.py \
             --img_decoder_dim_head $img_decoder_dim_head \
             --vae_loadcheck_path $vae_loadcheck_path \
             --loadcheck_path $loadcheck_path \
-            --seed 1 \
+            --seed 6 \
             --num_steps $num_steps \
             --infer \

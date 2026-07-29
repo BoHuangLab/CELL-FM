@@ -22,7 +22,7 @@ ulimit -c unlimited
 [ -z "${latent_channels}" ] && latent_channels=4
 [ -z "${vae_block_out_channels}" ] && vae_block_out_channels='128,256,512'
 
-## CELL-Diff
+## CELL-FM
 [ -z "${img_mask_ratio}" ] && img_mask_ratio=0
 [ -z "${cond_out_channels}" ] && cond_out_channels='32,64'
 [ -z "${sample_size}" ] && sample_size=40

@@ -89,14 +89,9 @@ def main(args) -> None:
     batch_size  = 64
 
     # ── sequence dict: sliding-window section on PRRSV ──────────────────────
-    wt_name = 'PRRSV-section-30-fix-seed'
+    wt_name = 'PRRSV'
     wt_seq  = 'MPNNNGKQQKRKKGDGQPVNQLCQMLGKIIAQQNQSRGKGPGKKNKKKNPEKPHFPLATEDDVRHHFTPSERQLCLSSIQTAFNQGAGTCTLSDSGRISYTVEFSLPTHHTVRLIRVTASPSA'
-    window  = 30
-
-    # # ── sequence dict: sliding-window section on TAT_HV1H2 ──────────────────────
-    # wt_name = 'TAT_HV1H2-section-25'
-    # wt_seq  = 'MEPVDPRLEPWKHPGSQPKTACTNCYCKKCCFHCQVCFITKALGISYGRKKRRQRRRAHQNSQTHQASLSKQPTSQPRGDPTGPKE'
-    # window  = 25
+    window  = 25
 
     seq_dict = {}
     for i in range(1, len(wt_seq) - window + 1):
@@ -117,7 +112,7 @@ def main(args) -> None:
         
         protein_seq = encoding.tokenize_sequence(prot_seq, vocab, True).unsqueeze(0).to(device)
 
-        seed_everything(args.seed)
+        seed_everything(args.seed) # Fix random seed for each protein sequence to reduce randomness in generation.
 
         save_file = output_dir / wt_name / prot_name
         save_file.mkdir(parents=True, exist_ok=True)

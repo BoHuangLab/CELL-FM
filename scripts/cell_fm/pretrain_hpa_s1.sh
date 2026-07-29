@@ -1,16 +1,21 @@
 ulimit -c unlimited
 [ -z "${n_gpu}" ] && n_gpu=$(nvidia-smi -L | wc -l)
-[ -z "${output_dir}" ] && output_dir=/hpc/reference/opencell/opencell/2d_proj_256_crop_dataset_virtual_staining_same_nucl
+
+# Wandb
+export WANDB_RUN_NAME=PT_HPA_CELLFM_S1
+export WANDB_PROJECT=CELL-FM
+[ -z "${output_dir}" ] && output_dir=pretrain_hpa/$WANDB_RUN_NAME
+# [ -z "${output_dir}" ] && output_dir='./PT_Test/$WANDB_RUN_NAME'
 
 # Dataset
-[ -z "${data_path}" ] && data_path='/hpc/reference/opencell/opencell'
-[ -z "${split_key}" ] && split_key=all
-[ -z "${phase}" ] && phase='test'  # 'train', 'test'
+[ -z "${data_path}" ] && data_path=/hpc/reference/opencell/human_protein_atlas
+[ -z "${split_key}" ] && split_key=cellfm_train
+[ -z "${phase}" ] && phase='train'  # 'train', 'val', 'test'
 
 [ -z "${img_resize}" ] && img_resize=256
-[ -z "${img_crop_size}" ] && img_crop_size=256
+[ -z "${img_crop_size}" ] && img_crop_size=1024
 [ -z "${seq_zero_mask_ratio}" ] && seq_zero_mask_ratio=0.0
-[ -z "${cell_image}" ] && cell_image='nucl'
+[ -z "${cell_image}" ] && cell_image='nucl,er,mt'
 
 # Transport parameters
 [ -z "${path_type}" ] && path_type=Linear
@@ -22,8 +27,8 @@ ulimit -c unlimited
 [ -z "${latent_channels}" ] && latent_channels=4
 [ -z "${vae_block_out_channels}" ] && vae_block_out_channels='128,256,512'
 
-## CELL-Diff
-[ -z "${img_mask_ratio}" ] && img_mask_ratio=0
+## CELL-FM
+[ -z "${img_mask_ratio}" ] && img_mask_ratio=0.5
 [ -z "${cond_out_channels}" ] && cond_out_channels='32,64'
 [ -z "${sample_size}" ] && sample_size=64
 [ -z "${esm_embedding}" ] && esm_embedding='esmc_600m'
@@ -48,19 +53,43 @@ ulimit -c unlimited
 [ -z "${img_decoder_dim_head}" ] && img_decoder_dim_head=64
 [ -z "${img_decoder_num_heads}" ] && img_decoder_num_heads=8
 
+[ -z "${cell_image_ratio}" ] && cell_image_ratio=0.5
+
+# Loss
+[ -z "${seq_loss_coeff}" ] && seq_loss_coeff=1.0
+[ -z "${img_diff_loss_coeff}" ] && img_diff_loss_coeff=1.0
+[ -z "${img_recon_loss_coeff}" ] && img_recon_loss_coeff=1.0
+
 # Training
-[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=finetune_opencell/FT_VAE_OC_256_KL1e-4_FP32_clip/checkpoint-50000/pytorch_model.bin
-[ -z "${loadcheck_path}" ] && loadcheck_path=finetune_opencell/FT_OC_CELLFM_Dev_NH8_clip_all_S2_R1/checkpoint-100000/pytorch_model.bin
+[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_hpa/vae/checkpoint-50000/pytorch_model.bin
+[ -z "${loadcheck_path}" ] && loadcheck_path=.
+[ -z "${learning_rate}" ] && learning_rate=3e-4
+[ -z "${weight_decay}" ] && weight_decay=0.0
+[ -z "${gradient_accumulation_steps}" ] && gradient_accumulation_steps=4
+[ -z "${per_device_train_batch_size}" ] && per_device_train_batch_size=16
+[ -z "${per_device_eval_batch_size}" ] && per_device_eval_batch_size=128
 
-# Evaluation
-[ -z "${num_steps}" ] && num_steps=100
+[ -z "${num_train_epochs}" ] && num_train_epochs=5000
+[ -z "${logging_dir}" ] && logging_dir=$output_dir
+[ -z "${logging_steps}" ] && logging_steps=100
+[ -z "${warmup_steps}" ] && warmup_steps=1000
+[ -z "${max_steps}" ] && max_steps=50000
+[ -z "${save_steps}" ] && save_steps=10000
+
+[ -z "${MASTER_PORT}" ] && MASTER_PORT=11458
+[ -z "${MASTER_ADDR}" ] && MASTER_ADDR=127.0.0.1
+
+DISTRIBUTED_ARGS="--nproc_per_node $n_gpu \
+                  --master_port $MASTER_PORT \
+                  --master_addr $MASTER_ADDR"
 
 
-python cell_fm/tasks/cell_fm/virtual_staining_opencell_same_nucl_save_tif.py \
+python -m torch.distributed.run $DISTRIBUTED_ARGS cell_fm/tasks/cell_fm/pretrain_hpa.py \
             --output_dir $output_dir \
             --data_path $data_path \
             --split_key $split_key \
             --phase $phase \
+            --data_aug \
             --img_resize $img_resize \
             --img_crop_size $img_crop_size \
             --seq_zero_mask_ratio $seq_zero_mask_ratio \
@@ -90,8 +119,27 @@ python cell_fm/tasks/cell_fm/virtual_staining_opencell_same_nucl_save_tif.py \
             --img_decoder_hidden_size $img_decoder_hidden_size \
             --img_decoder_num_heads $img_decoder_num_heads \
             --img_decoder_dim_head $img_decoder_dim_head \
+            --cell_image_ratio $cell_image_ratio \
+            --seq_loss_coeff $seq_loss_coeff \
+            --img_diff_loss_coeff $img_diff_loss_coeff \
+            --img_recon_loss_coeff $img_recon_loss_coeff \
             --vae_loadcheck_path $vae_loadcheck_path \
             --loadcheck_path $loadcheck_path \
-            --seed 6 \
-            --num_steps $num_steps \
-            --infer \
+            --learning_rate $learning_rate \
+            --weight_decay $weight_decay \
+            --gradient_accumulation_steps $gradient_accumulation_steps \
+            --per_device_train_batch_size $per_device_train_batch_size \
+            --per_device_eval_batch_size $per_device_eval_batch_size \
+            --num_train_epochs $num_train_epochs \
+            --logging_dir $logging_dir \
+            --logging_steps $logging_steps \
+            --warmup_steps $warmup_steps \
+            --max_steps $max_steps \
+            --save_steps $save_steps \
+            --seed 666666 \
+            --wandb \
+
+            # --ft \
+            # --ifresume \
+            # --bf16 \
+            # --fp16 \
