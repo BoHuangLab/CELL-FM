@@ -2,14 +2,13 @@ ulimit -c unlimited
 [ -z "${n_gpu}" ] && n_gpu=$(nvidia-smi -L | wc -l)
 
 # Wandb
-export WANDB_RUN_NAME=FT_VAE_CondenSeq_KL1e-4_R2
-export WANDB_PROJECT=CELL-Diff2
+export WANDB_RUN_NAME=FT_VAE_CondenSeq
+export WANDB_PROJECT=CELL-FM
 [ -z "${output_dir}" ] && output_dir=finetune_condenseq/$WANDB_RUN_NAME
-# [ -z "${output_dir}" ] && output_dir='./PT_Test'
 
 # Dataset
 [ -z "${data_path}" ] && data_path='/hpc/reference/opencell/condenseq'
-[ -z "${split_key}" ] && split_key='train'
+[ -z "${split_key}" ] && split_key=cellfm_train
 
 [ -z "${img_resize}" ] && img_resize=160
 

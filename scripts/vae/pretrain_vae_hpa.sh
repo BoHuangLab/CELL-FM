@@ -2,14 +2,13 @@ ulimit -c unlimited
 [ -z "${n_gpu}" ] && n_gpu=$(nvidia-smi -L | wc -l)
 
 # Wandb
-export WANDB_RUN_NAME=PT_VAE_HPA_KL1e-4_S256
-export WANDB_PROJECT=CELL-Diff2
+export WANDB_RUN_NAME=PT_VAE_HPA
+export WANDB_PROJECT=CELL-FM
 [ -z "${output_dir}" ] && output_dir=pretrain_hpa/$WANDB_RUN_NAME
-# [ -z "${output_dir}" ] && output_dir='./PT_Test'
 
 # Dataset
 [ -z "${data_path}" ] && data_path='/hpc/reference/opencell/human_protein_atlas'
-[ -z "${split_key}" ] && split_key='all'
+[ -z "${split_key}" ] && split_key=cellfm_train
 
 [ -z "${img_crop_size}" ] && img_crop_size=1024
 [ -z "${img_resize}" ] && img_resize=256
@@ -24,7 +23,7 @@ export WANDB_PROJECT=CELL-Diff2
 [ -z "${kl_loss_coeff}" ] && kl_loss_coeff=1e-4
 
 # Training
-[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_hpa/vae/checkpoint-50000/pytorch_model.bin
+[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=.
 [ -z "${learning_rate}" ] && learning_rate=3e-4
 [ -z "${weight_decay}" ] && weight_decay=0.0
 [ -z "${gradient_accumulation_steps}" ] && gradient_accumulation_steps=1
