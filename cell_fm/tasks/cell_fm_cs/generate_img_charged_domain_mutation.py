@@ -41,8 +41,7 @@ def main(args) -> None:
     model.to(device)
     model.eval()
 
-    # meta_data = pd.read_csv("cell_fm/tasks/cell_fm_cs/data/random_KRDE/panel_v2_selected.csv")
-    meta_data = pd.read_csv("cell_fm/tasks/cell_fm_cs/data/random_KRDE/panel_v3.csv")
+    meta_data = pd.read_csv("cell_fm/tasks/cell_fm_cs/data/random_KRDE/panel.csv")
 
     all_seq_dir = {}
 

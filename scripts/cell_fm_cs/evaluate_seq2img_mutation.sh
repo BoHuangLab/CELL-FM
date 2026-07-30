@@ -1,10 +1,10 @@
 ulimit -c unlimited
 [ -z "${n_gpu}" ] && n_gpu=$(nvidia-smi -L | wc -l)
-[ -z "${output_dir}" ] && output_dir=.
+[ -z "${output_dir}" ] && output_dir=/hpc/reference/opencell/condenseq/seq2img_all_mutation/
 
 # Dataset
 [ -z "${data_path}" ] && data_path=/hpc/reference/opencell/condenseq
-[ -z "${split_key}" ] && split_key=cellfm_test
+[ -z "${split_key}" ] && split_key=cellfm_test_selected_balanced
 [ -z "${phase}" ] && phase='test'  # 'train', 'test'
 
 [ -z "${img_resize}" ] && img_resize=160
@@ -12,6 +12,8 @@ ulimit -c unlimited
 [ -z "${seq_zero_mask_ratio}" ] && seq_zero_mask_ratio=0.0
 [ -z "${img_type}" ] && img_type='GFP'
 [ -z "${cell_image}" ] && cell_image='nucl'
+
+[ -z "${mutation_type}" ] && mutation_type='WT'
 
 # Transport parameters
 [ -z "${path_type}" ] && path_type=Linear
@@ -53,14 +55,13 @@ ulimit -c unlimited
 
 # Training
 [ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=/hpc/projects/group.huang/dihan.zheng/CELL-Diff2/finetune_condenseq/FT_VAE_CondenSeq_KL1e-4/checkpoint-50000/pytorch_model.bin
-# [ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_condenseq_cellfm_split/PT_CondenSeq_CELLFM_Dev_GFP_e_4_ignl_4_ignah_8_S1_R1/checkpoint-50000/pytorch_model.bin
-[ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_condenseq_cellfm_split/PT_CondenSeq_CELLFM_Dev_GFP_e_4_ignl_4_ignah_8_sc0d01_S2_R1/checkpoint-30000/pytorch_model.bin
+[ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_condenseq_cellfm_split/PT_CondenSeq_CELLFM_Dev_GFP_e_4_ignl_4_ignah_8_S1_R1/checkpoint-50000/pytorch_model.bin
 
 # Evaluation
 [ -z "${num_steps}" ] && num_steps=100
 
 
-python cell_fm/tasks/cell_fm_cs/evaluate_img2seq_exp_level.py \
+python cell_fm/tasks/cell_fm_cs/generate_img_mutation.py \
             --output_dir $output_dir \
             --data_path $data_path \
             --split_key $split_key \
@@ -70,6 +71,7 @@ python cell_fm/tasks/cell_fm_cs/evaluate_img2seq_exp_level.py \
             --img_type $img_type \
             --seq_zero_mask_ratio $seq_zero_mask_ratio \
             --cell_image $cell_image \
+            --mutation_type $mutation_type \
             --path_type $path_type \
             --prediction $prediction \
             --num_down_blocks $num_down_blocks \

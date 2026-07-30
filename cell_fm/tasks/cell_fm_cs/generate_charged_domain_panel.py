@@ -15,10 +15,6 @@ POS_SET = set("KR")
 NEG_SET = set("DE")
 SPACER_SET = set("GSQNT")
 
-# NUM_POS = 10
-# NUM_NEG = 10
-# NUM_SPACER = 46
-
 NUM_POS = 15
 NUM_NEG = 15
 NUM_SPACER = 36
@@ -58,7 +54,7 @@ while len(seq_list) < NUM_GENERATED:
 os.makedirs(save_path, exist_ok=True)
 
 df = pd.DataFrame({"protein_seq": seq_list})
-output_path = os.path.join(save_path, "panel_v3.csv")
+output_path = os.path.join(save_path, "panel.csv")
 df.to_csv(output_path, index=True)
 print(f"Saved {len(seq_list)} sequences to {output_path}")
 

@@ -1,10 +1,10 @@
 ulimit -c unlimited
 [ -z "${n_gpu}" ] && n_gpu=$(nvidia-smi -L | wc -l)
-[ -z "${output_dir}" ] && output_dir=/hpc/reference/opencell/condenseq/seq2img_ygn/
+[ -z "${output_dir}" ] && output_dir=/hpc/reference/opencell/condenseq/seq2img_charged_domain_mutation_random_KRDE_panel_v3_log_scale/
 
 # Dataset
 [ -z "${data_path}" ] && data_path=/hpc/reference/opencell/condenseq
-[ -z "${split_key}" ] && split_key=cellfm_test_selected_balanced
+[ -z "${split_key}" ] && split_key=cellfm_test
 [ -z "${phase}" ] && phase='test'  # 'train', 'test'
 
 [ -z "${img_resize}" ] && img_resize=160
@@ -12,9 +12,6 @@ ulimit -c unlimited
 [ -z "${seq_zero_mask_ratio}" ] && seq_zero_mask_ratio=0.0
 [ -z "${img_type}" ] && img_type='GFP'
 [ -z "${cell_image}" ] && cell_image='nucl'
-
-[ -z "${start_idx}" ] && start_idx=0
-[ -z "${end_idx}" ] && end_idx=1000
 
 # Transport parameters
 [ -z "${path_type}" ] && path_type=Linear
@@ -62,7 +59,7 @@ ulimit -c unlimited
 [ -z "${num_steps}" ] && num_steps=100
 
 
-python cell_fm/tasks/cell_fm_cs/generate_img_exp_level_cont_ygn.py \
+python cell_fm/tasks/cell_fm_cs/generate_img_charged_domain_mutation.py \
             --output_dir $output_dir \
             --data_path $data_path \
             --split_key $split_key \
@@ -103,8 +100,6 @@ python cell_fm/tasks/cell_fm_cs/generate_img_exp_level_cont_ygn.py \
             --num_steps $num_steps \
             --seed 6 \
             --infer \
-            --start_idx $start_idx \
-            --end_idx $end_idx \
 
             # --ft \
             # --ifresume \

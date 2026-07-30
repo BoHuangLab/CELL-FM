@@ -2,17 +2,14 @@ ulimit -c unlimited
 [ -z "${n_gpu}" ] && n_gpu=$(nvidia-smi -L | wc -l)
 
 # Wandb
-export WANDB_RUN_NAME=PT_CondenSeq_CELLFM_Dev_GFP_e_4_ignl_4_ignah_8_sc1_ic1_rc1_S1_R1
-export WANDB_PROJECT=CELL-Diff2
-[ -z "${output_dir}" ] && output_dir=pretrain_condenseq_cellfm_split/$WANDB_RUN_NAME
-# [ -z "${output_dir}" ] && output_dir=pretrain_condenseq/$WANDB_RUN_NAME
-# [ -z "${output_dir}" ] && output_dir='./PT_Test/PT_CondenSeq_CELLFM_GFP_S1_R1'
+export WANDB_RUN_NAME=PT_CondenSeq_CELLFM_S1
+export WANDB_PROJECT=CELL-FM
+[ -z "${output_dir}" ] && output_dir=pretrain_condenseq/$WANDB_RUN_NAME
 
 # Dataset
 [ -z "${data_path}" ] && data_path=/hpc/reference/opencell/condenseq
 [ -z "${split_key}" ] && split_key=cellfm_train
-# [ -z "${split_key}" ] && split_key=all
-[ -z "${phase}" ] && phase='train'  # 'train', 'val', 'test'
+[ -z "${phase}" ] && phase='train'  # 'train', 'test'
 
 [ -z "${img_resize}" ] && img_resize=160
 [ -z "${img_crop_size}" ] && img_crop_size=160
@@ -64,7 +61,7 @@ export WANDB_PROJECT=CELL-Diff2
 [ -z "${img_recon_loss_coeff}" ] && img_recon_loss_coeff=1.0
 
 # Training
-[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=/hpc/projects/group.huang/dihan.zheng/CELL-Diff2/finetune_condenseq/FT_VAE_CondenSeq_KL1e-4/checkpoint-50000/pytorch_model.bin
+[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_condenseq/vae/checkpoint-50000/pytorch_model.bin
 [ -z "${loadcheck_path}" ] && loadcheck_path=.
 [ -z "${learning_rate}" ] && learning_rate=3e-4
 [ -z "${weight_decay}" ] && weight_decay=0.0
@@ -144,7 +141,6 @@ python -m torch.distributed.run $DISTRIBUTED_ARGS cell_fm/tasks/cell_fm_cs/pretr
             --save_steps $save_steps \
             --dataloader_num_workers $dataloader_num_workers \
             --seed 666666 \
-            --ifresume \
 
             # --ft \
             # --ifresume \

@@ -1,7 +1,5 @@
 ulimit -c unlimited
-[ -z "${n_gpu}" ] && n_gpu=$(nvidia-smi -L | wc -l)
-# [ -z "${output_dir}" ] && output_dir=output/condenseq/seq2img_single/
-[ -z "${output_dir}" ] && output_dir=/hpc/reference/opencell/condenseq/seq2img_single/
+[ -z "${output_dir}" ] && output_dir=output/condenseq/seq2img/
 
 # Dataset
 [ -z "${data_path}" ] && data_path=/hpc/reference/opencell/condenseq
@@ -53,14 +51,14 @@ ulimit -c unlimited
 [ -z "${cell_image_ratio}" ] && cell_image_ratio=0.5
 
 # Training
-[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=/hpc/projects/group.huang/dihan.zheng/CELL-Diff2/finetune_condenseq/FT_VAE_CondenSeq_KL1e-4/checkpoint-50000/pytorch_model.bin
-[ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_condenseq_cellfm_split/PT_CondenSeq_CELLFM_Dev_GFP_e_4_ignl_4_ignah_8_S1_R1/checkpoint-50000/pytorch_model.bin
+[ -z "${vae_loadcheck_path}" ] && vae_loadcheck_path=pretrain_condenseq/vae/checkpoint-50000/pytorch_model.bin
+[ -z "${loadcheck_path}" ] && loadcheck_path=pretrain_condenseq/cellfm_seq2img/checkpoint-50000/pytorch_model.bin
 
 # Evaluation
 [ -z "${num_steps}" ] && num_steps=100
 
 
-python cell_fm/tasks/cell_fm_cs/evaluate_seq2img_cont.py \
+python cell_fm/tasks/cell_fm_cs/generate_img.py \
             --output_dir $output_dir \
             --data_path $data_path \
             --split_key $split_key \
