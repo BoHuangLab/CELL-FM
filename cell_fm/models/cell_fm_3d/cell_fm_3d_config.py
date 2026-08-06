@@ -92,7 +92,7 @@ class CELLFM3DConfig(PretrainedConfig):
     warmup_steps: int = 1000
     save_steps: int = 1000
 
-    dataloader_num_workers: int = 8
+    dataloader_num_workers: int = 16
     seed: int = 6
     wandb: bool = False
 
