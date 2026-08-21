@@ -22,6 +22,9 @@ class CELLFM3DConfig(PretrainedConfig):
     loss_weight: str = None
     train_eps: float = None
     sample_eps: float = None
+    timestep_sampler: str = 'uniform' # 'uniform' or 'logit_normal'
+    logit_mean: float = 0.0
+    logit_std: float = 1.0
 
     # VAE parameters (3D VAE)
     in_channels: int = 1
@@ -52,6 +55,7 @@ class CELLFM3DConfig(PretrainedConfig):
     img_generator_num_layers: int = 18
     attention_head_dim: int = 64
     num_attention_heads: int = 16
+    qk_norm: str = 'rms_norm'  # 'rms_norm' (SD3.5 default), 'fp32_layer_norm', or 'none'
 
     # Latent downsample (before SD3) / upsample (after SD3)
     down_channels: int = 64
@@ -92,7 +96,7 @@ class CELLFM3DConfig(PretrainedConfig):
     warmup_steps: int = 1000
     save_steps: int = 1000
 
-    dataloader_num_workers: int = 16
+    dataloader_num_workers: int = 8
     seed: int = 6
     wandb: bool = False
 

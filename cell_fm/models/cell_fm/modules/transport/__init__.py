@@ -1,4 +1,4 @@
-from .transport import Transport, ModelType, WeightType, PathType, Sampler
+from .transport import Transport, ModelType, WeightType, PathType, TimestepSampler, Sampler
 
 def create_transport(
     path_type='Linear',
@@ -6,6 +6,9 @@ def create_transport(
     loss_weight=None,
     train_eps=None,
     sample_eps=None,
+    timestep_sampler='uniform',
+    logit_mean=0.0,
+    logit_std=1.0,
 ):
     """function for creating Transport object
     **Note**: model prediction defaults to velocity
@@ -17,6 +20,9 @@ def create_transport(
     - likelihood_weighted: weight loss by likelihood weight
     - train_eps: small epsilon for avoiding instability during training
     - sample_eps: small epsilon for avoiding instability during sampling
+    - timestep_sampler: how to draw the training timestep; 'uniform' or 'logit_normal' (SD3)
+    - logit_mean: mean of the logit-normal draw; SD3 convention, positive favours the noise end
+    - logit_std: std of the logit-normal draw
     """
 
     if prediction == "noise":
@@ -32,6 +38,18 @@ def create_transport(
         loss_type = WeightType.LIKELIHOOD
     else:
         loss_type = WeightType.NONE
+
+    sampler_choice = {
+        "uniform": TimestepSampler.UNIFORM,
+        "logit_normal": TimestepSampler.LOGIT_NORMAL,
+    }
+
+    if timestep_sampler not in sampler_choice:
+        raise ValueError(
+            f"Unknown timestep_sampler '{timestep_sampler}'; expected one of {sorted(sampler_choice)}"
+        )
+
+    timestep_sampler = sampler_choice[timestep_sampler]
 
     path_choice = {
         "Linear": PathType.LINEAR,
@@ -58,6 +76,9 @@ def create_transport(
         loss_type=loss_type,
         train_eps=train_eps,
         sample_eps=sample_eps,
+        timestep_sampler=timestep_sampler,
+        logit_mean=logit_mean,
+        logit_std=logit_std,
     )
-    
+
     return state

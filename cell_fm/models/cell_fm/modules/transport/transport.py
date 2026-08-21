@@ -35,6 +35,14 @@ class WeightType(enum.Enum):
     VELOCITY = enum.auto()
     LIKELIHOOD = enum.auto()
 
+class TimestepSampler(enum.Enum):
+    """
+    How the training timestep t is drawn.
+    """
+
+    UNIFORM = enum.auto()       # t ~ U(t0, t1)
+    LOGIT_NORMAL = enum.auto()  # SD3: t = sigmoid(-u), u ~ N(logit_mean, logit_std^2)
+
 
 class Transport:
 
@@ -46,6 +54,9 @@ class Transport:
         loss_type,
         train_eps,
         sample_eps,
+        timestep_sampler=TimestepSampler.UNIFORM,
+        logit_mean=0.0,
+        logit_std=1.0,
     ):
         path_options = {
             PathType.LINEAR: path.ICPlan,
@@ -58,6 +69,9 @@ class Transport:
         self.path_sampler = path_options[path_type]()
         self.train_eps = train_eps
         self.sample_eps = sample_eps
+        self.timestep_sampler = timestep_sampler
+        self.logit_mean = logit_mean
+        self.logit_std = logit_std
 
     def prior_logp(self, z):
         '''
@@ -108,7 +122,18 @@ class Transport:
         
         x0 = th.randn_like(x1)
         t0, t1 = self.check_interval(self.train_eps, self.sample_eps)
-        t = th.rand((x1.shape[0],)) * (t1 - t0) + t0
+
+        if self.timestep_sampler == TimestepSampler.LOGIT_NORMAL:
+            # SD3 draws t_sd3 = sigmoid(u) with t_sd3=1 at the noise end. This codebase
+            # runs the other way (t=1 is data, see ICPlan.compute_alpha_t), so the
+            # equivalent draw is t = 1 - sigmoid(u) = sigmoid(-u). This keeps logit_mean
+            # meaning the same thing here as in diffusers.
+            u = th.randn((x1.shape[0],)) * self.logit_std + self.logit_mean
+            t = th.sigmoid(-u)
+            t = t * (t1 - t0) + t0
+        else:
+            t = th.rand((x1.shape[0],)) * (t1 - t0) + t0
+
         t = t.to(x1)
         return t, x0, x1
 

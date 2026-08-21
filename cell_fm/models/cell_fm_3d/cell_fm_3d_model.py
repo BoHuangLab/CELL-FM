@@ -9,7 +9,6 @@ import torch.nn as nn
 from transformers import PreTrainedModel
 
 from cell_fm.models.cell_fm.modules.protein_sequence_embedding import ESMEmbed
-from cell_fm.models.cell_fm.modules.positional_embedding import get_1d_sincos_pos_embed
 from cell_fm.models.cell_fm.modules.transport import create_transport, Sampler
 from cell_fm.models.vae_3d.vae_3d_model import VAE3DModel
 from cell_fm.models.vae_3d.vae_3d_config import VAE3DConfig
@@ -18,6 +17,15 @@ from cell_fm.logging import logger
 
 from .cell_fm_3d_config import CELLFM3DConfig
 from .modules import SD3Transformer3DModel, CondConvNet3D
+
+
+# The transport runs on t in [0, 1], but the sinusoidal timestep embedding SD3 uses internally
+# (diffusers' Timesteps) inherits ADM's frequency schedule, which is built for t in [0, 1000].
+# Fed t in [0, 1] its lowest frequencies see arguments of ~1e-4 rad, so cos rounds to exactly 1
+# and the code collapses: at t=0.3 vs t=0.7, 94 of 256 features are bit-identical in bf16 (2
+# after scaling). Units, not a hyperparameter -- deliberately not a config field, since a
+# pretrain/eval mismatch here would silently corrupt inference.
+TIMESTEP_SCALE = 1000.0
 
 
 class CELLFM3DModel(PreTrainedModel):
@@ -35,6 +43,9 @@ class CELLFM3DModel(PreTrainedModel):
             config.loss_weight,
             config.train_eps,
             config.sample_eps,
+            timestep_sampler=config.timestep_sampler,
+            logit_mean=config.logit_mean,
+            logit_std=config.logit_std,
         )
         self.transport_sampler = Sampler(self.transport)
 
@@ -215,6 +226,7 @@ class CELLFM3D(nn.Module):
             num_attention_heads=config.num_attention_heads,
             joint_attention_dim=config.encoder_hidden_size,
             pooled_projection_dim=config.encoder_hidden_size,
+            qk_norm=config.qk_norm,
         )
 
         # Latent upsample: down_channels at (d_sd,h_sd,w_sd) -> up_out at (d_lat,h_lat,w_lat)
@@ -230,17 +242,15 @@ class CELLFM3D(nn.Module):
                 2 * config.skip_channels, config.latent_channels, kernel_size=3, padding=1
             )
 
-        # Sequence embedding
+        # ESM-C embeddings go straight to the transformer. No adapter in between: SD3's
+        # context_embedder is already an affine map on this tensor, so a Linear here would collapse
+        # into it, and its AdaLayerNormZero re-normalizes the context at every block entry, so a
+        # norm here buys nothing either. Position is likewise left to ESM-C's RoPE -- an additive
+        # sincos term would carry norm sqrt(hidden/2) against an ESM signal of ~1.5 and bury it.
         self.initialize_protein_sequence_embedding(config)
-        self.seq_proj_in = nn.Linear(config.encoder_hidden_size, config.encoder_hidden_size)
 
-        protein_sequence_pos_embed = get_1d_sincos_pos_embed(
-            config.encoder_hidden_size, config.max_protein_sequence_len + 2
-        )
-        self.protein_sequence_pos_embed = nn.Parameter(
-            torch.from_numpy(protein_sequence_pos_embed).float().unsqueeze(0),
-            requires_grad=False,
-        )
+        # Same id ESM-C uses to build its own internal mask, so the two agree by construction.
+        self.seq_pad_token_id = self.protein_sequence_embedding.model.tokenizer.pad_token_id
 
     def initialize_protein_sequence_embedding(self, config: CELLFM3DConfig):
         self.protein_sequence_embedding = ESMEmbed(
@@ -256,11 +266,19 @@ class CELLFM3D(nn.Module):
         protein_seq: torch.Tensor,
         time: torch.Tensor,
     ) -> torch.Tensor:
-        seq_embeds = self.protein_sequence_embedding(protein_seq)               # (B, T, hidden)
-        seq_embeds = self.seq_proj_in(seq_embeds)
-        seq_embeds = seq_embeds + self.protein_sequence_pos_embed[:, :protein_seq.shape[1]]
+        # Scaled here rather than at the call sites so training and sequence_to_image cannot diverge.
+        t_cond = time * TIMESTEP_SCALE
 
-        pooled = seq_embeds.mean(dim=1)                                         # (B, hidden)
+        seq_embeds = self.protein_sequence_embedding(protein_seq)               # (B, T, hidden)
+        seq_mask = protein_seq != self.seq_pad_token_id                         # (B, T), True = real
+
+        # Global sequence summary for AdaLN, averaged over real tokens only. Dividing by T instead
+        # would shrink a 127-residue protein's summary ~10x in a batch padded to 1367 -- the exact
+        # failure that turned POLR2F into noise. Masked explicitly rather than leaning on ESM-C's
+        # zero pad rows: ESMEmbed.scale_layer is an Identity only while encoder_hidden_size matches
+        # the ESM width, and the biased Linear it becomes otherwise would make pad rows nonzero.
+        seq_weight = seq_mask.unsqueeze(-1).to(seq_embeds.dtype)                # (B, T, 1)
+        pooled_seq = (seq_embeds * seq_weight).sum(dim=1) / seq_weight.sum(dim=1).clamp(min=1.0)
 
         cell_img_conv = self.cond_conv(cell_img)                                # (B, cond_C, d_lat, h_lat, w_lat)
         x = torch.cat([protein_img_latent, cell_img_conv], dim=1)               # (B, latent+cond_C, d_lat, h_lat, w_lat)
@@ -273,8 +291,9 @@ class CELLFM3D(nn.Module):
         x = self.img_generator(
             hidden_states=x,
             encoder_hidden_states=seq_embeds,
-            pooled_projections=pooled,
-            timestep=time,
+            pooled_projections=pooled_seq,
+            timestep=t_cond,
+            encoder_attention_mask=seq_mask,
         )                                                                      # (B, down_C, d_sd, h_sd, w_sd)
 
         x = self.latent_upsample(x)                                             # (B, up_out, d_lat, h_lat, w_lat)

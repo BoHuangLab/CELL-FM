@@ -15,6 +15,9 @@ export WANDB_PROJECT=CELL-FM-3D
 # Transport parameters
 [ -z "${path_type}" ] && path_type=Linear
 [ -z "${prediction}" ] && prediction=velocity
+[ -z "${timestep_sampler}" ] && timestep_sampler=logit_normal
+[ -z "${logit_mean}" ] && logit_mean=0.0
+[ -z "${logit_std}" ] && logit_std=1.0
 
 # VAE (3D, pretrained)
 [ -z "${num_down_blocks}" ] && num_down_blocks=2
@@ -88,6 +91,9 @@ python -m torch.distributed.run $DISTRIBUTED_ARGS cell_fm/tasks/cell_fm_3d/pretr
             --seq_zero_mask_ratio $seq_zero_mask_ratio \
             --path_type $path_type \
             --prediction $prediction \
+            --timestep_sampler $timestep_sampler \
+            --logit_mean $logit_mean \
+            --logit_std $logit_std \
             --num_down_blocks $num_down_blocks \
             --latent_channels $latent_channels \
             --vae_block_out_channels $vae_block_out_channels \
