@@ -114,14 +114,44 @@ class CELLFM3DModel(PreTrainedModel):
             k: v for k, v in checkpoints_state.items()
             if k in model_state_dict and v.size() == model_state_dict[k].size()
         }
-        keys = self.load_state_dict(filtered, strict=False)._asdict()
+        self.load_state_dict(filtered, strict=False)
 
-        missing = [k for k in keys["missing_keys"] if "dummy" not in k]
-        unexpected = [k for k in keys["unexpected_keys"] if "dummy" not in k]
-        if missing:
-            logger.info(f"Missing keys in {checkpoint_path}: {missing}")
-        if unexpected:
-            logger.info(f"Unexpected keys in {checkpoint_path}: {unexpected}")
+        # Anything dropped here silently keeps its random init and the model still runs, so a
+        # config that disagrees with the checkpoint only ever surfaces as bad samples. Warn, and
+        # keep the shape mismatches separate: those mean a geometry field (patch_size,
+        # down_channels, num_attention_heads, ...) differs from the run that wrote the checkpoint,
+        # which is a mistake, whereas a plain absence is the ordinary case for a module the
+        # checkpoint predates.
+        mismatched = sorted(
+            k for k, v in checkpoints_state.items()
+            if k in model_state_dict and v.size() != model_state_dict[k].size()
+        )
+        absent = sorted(set(model_state_dict) - set(filtered) - set(mismatched))
+        unknown = sorted(set(checkpoints_state) - set(model_state_dict))
+
+        logger.info(
+            f"Loaded {len(filtered)}/{len(model_state_dict)} tensors from {checkpoint_path}"
+        )
+        if mismatched:
+            shapes = [
+                (k, tuple(checkpoints_state[k].shape), tuple(model_state_dict[k].shape))
+                for k in mismatched[:3]
+            ]
+            logger.warning(
+                f"{len(mismatched)} tensors in {checkpoint_path} have a different shape and were "
+                f"NOT loaded; they keep their random init. Check the geometry config against the "
+                f"run that wrote this checkpoint. (checkpoint vs model): {shapes}"
+            )
+        if absent:
+            logger.warning(
+                f"{len(absent)} model tensors are absent from {checkpoint_path} and keep their "
+                f"random init (e.g. {absent[:5]})"
+            )
+        if unknown:
+            logger.info(
+                f"{len(unknown)} tensors in {checkpoint_path} are not part of this model "
+                f"(e.g. {unknown[:5]})"
+            )
 
     @torch.no_grad()
     def prepare_data(self, batched_data):
@@ -140,7 +170,14 @@ class CELLFM3DModel(PreTrainedModel):
         protein_seq = batched_data['protein_seq']
         protein_img_latent, cell_img = self.prepare_data(batched_data)
 
-        t, x0, x1 = self.transport.sample(protein_img_latent)
+        # Upcast before sampling t: under bf16 autocast the VAE latent is bf16, and
+        # `Transport.sample` ends with `t.to(x1)`, so t would inherit bf16's 8-bit mantissa. After
+        # TIMESTEP_SCALE that leaves ~1378 distinct t_cond values over [0, 1000] (fp32 gives ~2e5)
+        # with errors up to 4 -- enough to alias the top 13% of the 256 sinusoidal timestep
+        # channels, and to put inference (which runs in fp32, off that grid) on a schedule training
+        # never saw. Same units-vs-precision trap as TIMESTEP_SCALE, at the other end of the
+        # frequency range. Also keeps the regression target ut out of bf16.
+        t, x0, x1 = self.transport.sample(protein_img_latent.float())
         t, xt, ut = self.transport.path_sampler.plan(t, x0, x1)
 
         img_output = self.net(xt, cell_img, protein_seq, t)
