@@ -5,7 +5,6 @@ ulimit -c unlimited
 export WANDB_RUN_NAME=PT_HPA_CELLFM_S1
 export WANDB_PROJECT=CELL-FM
 [ -z "${output_dir}" ] && output_dir=pretrain_hpa/$WANDB_RUN_NAME
-# [ -z "${output_dir}" ] && output_dir='./PT_Test/$WANDB_RUN_NAME'
 
 # Dataset
 [ -z "${data_path}" ] && data_path=/hpc/reference/opencell/human_protein_atlas

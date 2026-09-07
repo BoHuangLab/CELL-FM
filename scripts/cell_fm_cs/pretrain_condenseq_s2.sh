@@ -3,7 +3,7 @@ ulimit -c unlimited
 
 # Wandb
 export WANDB_RUN_NAME=PT_CondenSeq_CELLFM_S2
-export WANDB_PROJECT=CELL-Diff2
+export WANDB_PROJECT=CELL-FM
 [ -z "${output_dir}" ] && output_dir=pretrain_condenseq/$WANDB_RUN_NAME
 
 # Dataset

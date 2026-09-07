@@ -2,10 +2,9 @@ ulimit -c unlimited
 [ -z "${n_gpu}" ] && n_gpu=$(nvidia-smi -L | wc -l)
 
 # Wandb
-export WANDB_RUN_NAME=PT_CondenSeq_img_ViT_cls_R1
-export WANDB_PROJECT=CELL-Diff2
+export WANDB_RUN_NAME=PT_CondenSeq_img_ViT_cls
+export WANDB_PROJECT=CELL-FM
 [ -z "${output_dir}" ] && output_dir=pretrain_condenseq_cellfm_split/$WANDB_RUN_NAME
-# [ -z "${output_dir}" ] && output_dir=PT_Test/$WANDB_RUN_NAME
 
 # Dataset
 [ -z "${data_path}" ] && data_path=/hpc/reference/opencell/condenseq

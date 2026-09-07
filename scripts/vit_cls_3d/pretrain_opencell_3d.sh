@@ -2,8 +2,8 @@ ulimit -c unlimited
 [ -z "${n_gpu}" ] && n_gpu=$(nvidia-smi -L | wc -l)
 
 # Wandb
-export WANDB_RUN_NAME=PT_OC3D_ViT_cls_R2
-export WANDB_PROJECT=CELL-FM-3D
+export WANDB_RUN_NAME=PT_OC3D_ViT_cls
+export WANDB_PROJECT=CELL-FM
 [ -z "${output_dir}" ] && output_dir=pretrain_opencell_3d/$WANDB_RUN_NAME
 
 # Dataset
