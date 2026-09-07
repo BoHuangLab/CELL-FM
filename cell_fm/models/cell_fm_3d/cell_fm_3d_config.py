@@ -50,6 +50,7 @@ class CELLFM3DConfig(PretrainedConfig):
     esm_fixed_embedding: bool = True
     encoder_hidden_size: int = 320
     max_protein_sequence_len: int = 2048
+    seq_length_control: str = 'filter'  # 'filter', 'crop' or 'random_crop'
 
     # SD3-based image generator
     img_generator_num_layers: int = 18

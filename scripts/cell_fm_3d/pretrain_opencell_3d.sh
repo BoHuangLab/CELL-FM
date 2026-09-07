@@ -35,6 +35,7 @@ export WANDB_PROJECT=CELL-FM-3D
 [ -z "${esm_embedding}" ] && esm_embedding='esmc_600m'
 [ -z "${encoder_hidden_size}" ] && encoder_hidden_size=1152
 [ -z "${max_protein_sequence_len}" ] && max_protein_sequence_len=2048
+[ -z "${seq_length_control}" ] && seq_length_control=crop
 
 # Cell image conditioning
 [ -z "${cell_image}" ] && cell_image='nucl'
@@ -115,6 +116,7 @@ python -m torch.distributed.run $DISTRIBUTED_ARGS cell_fm/tasks/cell_fm_3d/pretr
             --esm_embedding $esm_embedding \
             --encoder_hidden_size $encoder_hidden_size \
             --max_protein_sequence_len $max_protein_sequence_len \
+            --seq_length_control $seq_length_control \
             --img_generator_num_layers $img_generator_num_layers \
             --attention_head_dim $attention_head_dim \
             --num_attention_heads $num_attention_heads \

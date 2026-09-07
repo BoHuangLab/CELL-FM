@@ -50,6 +50,7 @@ class OpenCell3DCropDataset(Dataset):
         self.seq_zero_mask_ratio = args.seq_zero_mask_ratio
         self.max_protein_sequence_len = args.max_protein_sequence_len
         self.pre_pad_seq = getattr(args, 'pre_pad_seq', False)
+        self.seq_length_control = getattr(args, 'seq_length_control', 'filter')
         self.phase = args.phase
 
         self.gene_names = sorted(self.meta_data['gene_name'].unique().tolist())
@@ -85,7 +86,9 @@ class OpenCell3DCropDataset(Dataset):
         return protein_img, nucleus_img
 
     def __getitem__(self, index: int) -> dict:
-        if self.phase == 'train':
+        # In 'crop' modes the collater shortens over-long sequences instead of dropping them,
+        # so resampling here would keep them out of training entirely.
+        if self.phase == 'train' and self.seq_length_control == 'filter':
             while True:
                 meta_data = self.meta_data.iloc[index]
                 if len(meta_data['sequence']) <= self.max_protein_sequence_len:
@@ -135,7 +138,10 @@ class OpenCell3DCropDataset(Dataset):
         return len(self.meta_data)
 
     def collate(self, samples: List[dict]) -> dict:
-        return collate_fn(samples, self.vocab, self.max_protein_sequence_len, 0)
+        return collate_fn(
+            samples, self.vocab, self.max_protein_sequence_len, 0,
+            seq_length_control=self.seq_length_control,
+        )
 
 
 class OpenCell3DCropImageOnlyDataset(Dataset):
