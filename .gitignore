@@ -36,3 +36,7 @@ cell_fm/tasks_local/
 scripts_local/
 
 huggingface_space
+# Build products of notebooks/tools/build_hpa_assets.py. They are derived from the
+# cluster HPA data and published to the hpa/ prefix of the weights repo, so they are
+# regenerated rather than tracked.
+notebooks/tools/assets/
