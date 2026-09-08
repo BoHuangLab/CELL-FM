@@ -11,8 +11,8 @@ is the version with no setup.
 
 ## Dependency pins, and why
 
-Colab ships torch, pandas and matplotlib; the notebook installs the rest. Five of those
-choices are deliberate, and four of them exist because one pin forces the next:
+Colab ships torch, pandas and matplotlib; the notebook installs the rest. Every choice
+below is deliberate, and several exist only because another one forces them:
 
 - **`esm==3.1.4` with `--no-deps`.** Its metadata requires `torchtext`, which has no wheel
   past Python 3.11 and would pull torch backwards. Nothing on the ESM-C code path imports
