@@ -34,3 +34,5 @@ analysis/
 cell_fm/tasks_local/
 
 scripts_local/
+
+huggingface_space
