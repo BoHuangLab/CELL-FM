@@ -24,9 +24,10 @@ Runtime, measured per sequence:
 
 | Preset | Ladder | ODE steps | A40 | rough T4 |
 |---|---|---|---|---|
-| `quick` (default) | 192 | 50 | ~30 s | ~2 min |
-| `standard` | 256 | 100 | ~40 s | ~3 min |
-| `paper` | 512 | 100 | ~80 s | ~6 min |
+| `quick` (default) | 256 | 100 | ~40 s | ~3 min |
+| `standard` | 512 | 100 | ~80 s | ~6 min |
+
+Both are coarser than the published runs, which scan 4096 levels.
 
 Setup downloads ~4.4 GB once: 2.1 GB of CELL-FM checkpoints from
 [`BoHuangLab/CELL-FM`](https://huggingface.co/BoHuangLab/CELL-FM), and 2.3 GB for the
@@ -46,7 +47,7 @@ If the Space ever moves, the two constants to change are `CODE` in the fetch cel
 
 ## Reading the numbers
 
-Absolute AUC moves with the seed, the GPU and the preset — at `paper` the NUP98 wild type
+Absolute AUC moves with the seed, the GPU and the preset — at `standard` the NUP98 wild type
 lands around 0.49, with a spread of roughly ±0.02 between seeds, and c<sub>sat</sub>, being
 a single threshold crossing, moves further — so **comparisons between sequences are the
 signal, not the third decimal place**.
