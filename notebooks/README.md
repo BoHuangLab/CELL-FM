@@ -8,6 +8,18 @@ is the version with no setup.
 | Notebook | | |
 |---|---|---|
 | [`condensate_titration.ipynb`](condensate_titration.ipynb) | Sequence to condensate titration curve, AUC and AAC | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/BoHuangLab/CELL-FM/blob/master/notebooks/condensate_titration.ipynb) |
+| [`nls_screening.ipynb`](nls_screening.ipynb) | Slide a window along a sequence and score each fragment for nuclear localisation | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/BoHuangLab/CELL-FM/blob/master/notebooks/nls_screening.ipynb) |
+
+Both notebooks pull their model code from the public Space with `snapshot_download`, so the
+notebooks and the hosted app cannot drift: same configs, same fixed conditioning image, same
+metric definitions. Neither vendors any model code of its own.
+
+`nls_screening.ipynb` additionally needs the `hpa/` files in
+[`BoHuangLab/CELL-FM`](https://huggingface.co/BoHuangLab/CELL-FM) — the virtual-staining
+checkpoint and VAE, plus the anchor cell and the two masks drawn on it. Push them with
+`huggingface_space/upload_weights.py`; until that runs the notebook cannot load its model.
+It is also the slower of the two by a wide margin: 1.66 s per generated image on an A40,
+measured, against 0.16 s for condensate.
 
 ## Dependency pins, and why
 
