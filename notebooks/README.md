@@ -47,10 +47,9 @@ If the Space ever moves, the two constants to change are `CODE` in the fetch cel
 
 ## Reading the numbers
 
-Absolute AUC moves with the seed, the GPU and the preset — at `standard` the NUP98 wild type
-lands around 0.49, with a spread of roughly ±0.02 between seeds, and c<sub>sat</sub>, being
-a single threshold crossing, moves further — so **comparisons between sequences are the
-signal, not the third decimal place**.
+Absolute AUC moves with the seed, the GPU and the preset — at `standard` the NUP98 wild
+type lands around 0.49, with a spread of roughly ±0.02 between seeds — so **comparisons
+between sequences are the signal, not the third decimal place**.
 
 If you loop the notebook over several sequences, hold `SEED` fixed. Paired that way the
 shared sampling noise largely cancels, and a difference well under the run-to-run spread
