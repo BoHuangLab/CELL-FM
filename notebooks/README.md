@@ -27,6 +27,10 @@ below is deliberate, and several exist only because another one forces them:
   not exist in 1.x, so Colab's pandas dies on import with `module 'numpy.dtypes' has no
   attribute 'StringDType'`. pandas 2.2.3 is the last release that works under the pin and
   ships a wheel for Python 3.13.
+- **`tifffile<2026.4`.** Section 6 writes the generated stack as a TIFF, and the current
+  `tifffile` declares `numpy>=2.1`. It carries no NumPy 2 API that would actually break
+  under the pin, but that declaration is the same signal `pandas` gave before it broke, so
+  the notebook takes the last release that accepts NumPy 1.x rather than betting on it.
 - **`transformers<4.47`.** `esm`'s own bound, and it is behavioural, not cosmetic. 4.47
   replaced the special-token properties on `PreTrainedTokenizer` with a
   `_special_tokens_map` served through `__getattr__`. `esm 3.1.4`'s `EsmSequenceTokenizer`
