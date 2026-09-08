@@ -43,6 +43,16 @@ DEFAULT_SOURCES = {
         "/hpc/projects/group.huang/dihan.zheng/CELL-FM/"
         "pretrain_hpa/vae/checkpoint-50000/pytorch_model.bin"
     ),
+    # img2seq runs at 512 px and needs its own VAE; vae.bin above is the 256 px one that
+    # pairs with the seq2img generator, and the NLS notebook fetches it by that name.
+    "hpa/cellfm_img2seq.bin": (
+        "/hpc/projects/group.huang/dihan.zheng/CELL-FM/"
+        "pretrain_hpa/cellfm_img2seq/checkpoint-60000/pytorch_model.bin"
+    ),
+    "hpa/vae_512.bin": (
+        "/hpc/projects/group.huang/dihan.zheng/CELL-FM/"
+        "pretrain_hpa/vae_512/checkpoint-50000/pytorch_model.bin"
+    ),
     "hpa/anchor_cell.npy": os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "assets", "anchor_cell.npy"),
     "hpa/anchor_masks.npz": os.path.join(
@@ -70,7 +80,9 @@ Checkpoints behind the [CELL-FM CondenSeq demo]({space_url}).
 | `condenseq/vae.bin` | Image VAE, 160x160, 3 down blocks, 4 latent channels | `pretrain_condenseq/vae/checkpoint-50000` |
 | `condenseq/vit_cls.bin` | ViT condensed/diffuse classifier, 2-channel 160x160 input | `PT_CondenSeq_img_ViT_cls_R1/checkpoint-10000` |
 | `hpa/cellfm_seq2img.bin` | CELL-FM virtual-staining generator for HPA, 256x256, 3-channel conditioning (includes the ESM-C 600M encoder) | `pretrain_hpa/cellfm_seq2img/checkpoint-50000` |
-| `hpa/vae.bin` | Image VAE, 256x256, 3 down blocks, 4 latent channels | `pretrain_hpa/vae/checkpoint-50000` |
+| `hpa/vae.bin` | Image VAE at 256x256, the one `hpa/cellfm_seq2img.bin` was trained against | `pretrain_hpa/vae/checkpoint-50000` |
+| `hpa/cellfm_img2seq.bin` | CELL-FM image-to-sequence model for HPA, 512x512, 3-channel conditioning (includes the ESM-C 600M encoder) | `pretrain_hpa/cellfm_img2seq/checkpoint-60000` |
+| `hpa/vae_512.bin` | Image VAE at 512x512, the one `hpa/cellfm_img2seq.bin` was trained against — a different model from `hpa/vae.bin`, not a rename | `pretrain_hpa/vae_512/checkpoint-50000` |
 | `hpa/anchor_cell.npy` | The fixed cell every NLS-screening image is conditioned on: `(3, 256, 256)` float32 in [-1, 1], channels nucleus, ER, microtubules. HPA gene H3C13, cell crop `1194_B2_2_4` | built |
 | `hpa/anchor_masks.npz` | Two 256x256 boolean masks over that cell, `nucleus` and `cell`; cytoplasm is `cell & ~nucleus` | built |
 
@@ -78,7 +90,12 @@ Hyperparameters for the CondenSeq models are set in `pipeline.py` in the Space a
 `scripts/cell_fm_cs/evaluate_seq2img.sh` and
 `scripts/vit_cls_condenseq_img/pretrain.sh` in the CELL-FM repository. The HPA
 hyperparameters are spelled out in `notebooks/nls_screening.ipynb` and mirror
-`scripts/cell_fm/evaluate_virtual_staining_hpa_dict.sh`.
+`scripts/cell_fm/evaluate_virtual_staining_hpa_dict.sh`. The img2seq pair mirrors
+`scripts_local/cell_fm/evaluate_img2seq_hpa_v2.sh`: 512 px, `sample_size` 128,
+`encoder_patch_size` 8, `img_generator_patch_size` 4, 8 attention heads.
+
+Each generator must be loaded with the VAE it was trained against — pairing
+`cellfm_img2seq.bin` with the 256 px `vae.bin` gives a latent-size mismatch.
 """
 
 
