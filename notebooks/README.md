@@ -9,52 +9,6 @@ is the version with no setup.
 |---|---|---|
 | [`condensate_titration.ipynb`](condensate_titration.ipynb) | Sequence to condensate titration curve, AUC and AAC | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/BoHuangLab/CELL-FM/blob/master/notebooks/condensate_titration.ipynb) |
 
-## Condensate titration
-
-Give it a 66-residue IDP sequence; it generates one microscopy image per protein-intensity
-level over a log-spaced concentration ladder, classifies each image condensed or diffuse,
-smooths the calls into a titration curve, and integrates the curve into **AUC**
-(condensation propensity) and **AAC** (condensation lost to reentrant dissolution). It
-walks through all three stages separately rather than calling `pipeline.run`, so each can
-be inspected on its own: the generated images, the per-image condensed/diffuse calls, and
-the curve they smooth into. The sequence goes in through a text box that validates as you
-type, defaulting to the NUP98 IDP.
-
-Runtime, measured per sequence:
-
-| Preset | Ladder | ODE steps | A40 | rough T4 |
-|---|---|---|---|---|
-| `quick` (default) | 256 | 100 | ~40 s | ~3 min |
-| `standard` | 512 | 100 | ~80 s | ~6 min |
-
-Both are coarser than the published runs, which scan 4096 levels.
-
-Setup downloads ~4.4 GB once: 2.1 GB of CELL-FM checkpoints from
-[`BoHuangLab/CELL-FM`](https://huggingface.co/BoHuangLab/CELL-FM), and 2.3 GB for the
-ESM-C 600M encoder the generator is built around, which the `esm` package fetches when the
-model is constructed. Everything is public — no HF token needed.
-
-## Where the code comes from
-
-The notebook does not vendor the pipeline. It `snapshot_download`s the public Space
-(`repo_type="space"`, ~400 kB) and imports `pipeline.py` and `metrics.py` from it, so the
-notebook and the app cannot drift apart: same model configs, same fixed reference nucleus,
-same metric definitions, same assets. Model code comes with that snapshot as an
-import-closed subset of `cell_fm/`.
-
-If the Space ever moves, the two constants to change are `CODE` in the fetch cell and
-`pipeline.MODEL_REPO` (overridable with `CELLFM_MODEL_REPO`).
-
-## Reading the numbers
-
-Absolute AUC moves with the seed, the GPU and the preset — at `standard` the NUP98 wild
-type lands around 0.49, with a spread of roughly ±0.02 between seeds — so **comparisons
-between sequences are the signal, not the third decimal place**.
-
-If you loop the notebook over several sequences, hold `SEED` fixed. Paired that way the
-shared sampling noise largely cancels, and a difference well under the run-to-run spread
-stays resolvable; taken across different seeds, GPUs or presets it means nothing.
-
 ## Dependency pins, and why
 
 Colab ships torch, pandas and matplotlib; the notebook installs the rest. Five of those
