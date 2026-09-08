@@ -57,8 +57,8 @@ stays resolvable; taken across different seeds, GPUs or presets it means nothing
 
 ## Dependency pins, and why
 
-Colab ships torch, pandas and matplotlib; the notebook installs the rest. Three choices
-are deliberate:
+Colab ships torch, pandas and matplotlib; the notebook installs the rest. Five of those
+choices are deliberate, and four of them exist because one pin forces the next:
 
 - **`esm==3.1.4` with `--no-deps`.** Its metadata requires `torchtext`, which has no wheel
   past Python 3.11 and would pull torch backwards. Nothing on the ESM-C code path imports
@@ -73,6 +73,13 @@ are deliberate:
   not exist in 1.x, so Colab's pandas dies on import with `module 'numpy.dtypes' has no
   attribute 'StringDType'`. pandas 2.2.3 is the last release that works under the pin and
   ships a wheel for Python 3.13.
+- **`transformers<4.47`.** `esm`'s own bound, and it is behavioural, not cosmetic. 4.47
+  replaced the special-token properties on `PreTrainedTokenizer` with a
+  `_special_tokens_map` served through `__getattr__`. `esm 3.1.4`'s `EsmSequenceTokenizer`
+  still expects the property, so on anything newer `tokenizer.mask_token` is `None` and
+  generation dies in `esm/utils/encoding.py` with `replace() argument 2 must be str, not
+  None`. 4.46.3 is the last release with the property; it pulls `tokenizers 0.20` and
+  `huggingface_hub 0.36`, both of which have wheels for Python 3.13.
 - **No `flash-attn`.** Without it ESM-C falls back to its pure-torch rotary embedding,
   verified to give identical results, and skips a fragile CUDA build.
 
@@ -82,7 +89,8 @@ install cell. The notebook says so up front rather than letting a long silent bu
 like a hang.
 
 The NumPy downgrade also makes pip list every preinstalled Colab package that wants NumPy
-2 (opencv, jax, shap and so on), and repeat that `esm` asked for `torchtext` and
-`transformers<4.47`. None of that is a failure: nothing on this path imports those
-packages, and every symbol the pipeline takes from `transformers` still exists in 5.x. The
-install cell explains the messages and then checks the two pins that actually matter.
+2 — opencv, jax, shap and so on. None of those is imported here, and a wheel compiled
+against NumPy 2 still runs under 1.x, so they are noise. The one `esm` bound left
+unenforced is `torchtext`, which nothing on the ESM-C path imports and which has no wheel
+for this Python. The install cell explains the messages, then checks the four pins that
+actually matter rather than leaving you to read pip's output.
