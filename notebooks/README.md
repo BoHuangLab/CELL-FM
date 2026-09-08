@@ -81,6 +81,13 @@ choices are deliberate, and four of them exist because one pin forces the next:
   generation dies in `esm/utils/encoding.py` with `replace() argument 2 must be str, not
   None`. 4.46.3 is the last release with the property; it pulls `tokenizers 0.20` and
   `huggingface_hub 0.36`, both of which have wheels for Python 3.13.
+- **`USE_TF=0` and `USE_FLAX=0`**, set before `transformers` is first imported. Not a
+  pin, but the same root cause. `transformers` probes for a TensorFlow backend at import
+  time and `image_transforms.py` acts on it with `if is_tf_available(): import
+  tensorflow`; Colab has TensorFlow, its tflite utils import jax, and `jax/_src/dtypes.py`
+  runs `np.dtypes.StringDType()` at module level. Under `numpy<2` that kills the import of
+  `transformers.modeling_utils`, and with it `diffusers`, `cell_fm` and the pipeline.
+  Nothing here uses either backend, so both are switched off.
 - **No `flash-attn`.** Without it ESM-C falls back to its pure-torch rotary embedding,
   verified to give identical results, and skips a fragile CUDA build.
 
