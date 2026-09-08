@@ -70,5 +70,13 @@ are deliberate:
 - **No `flash-attn`.** Without it ESM-C falls back to its pure-torch rotary embedding,
   verified to give identical results, and skips a fragile CUDA build.
 
-That chain tops out at **Python 3.12** — neither `biotite==0.41.2` nor NumPy 1.x ships
-wheels beyond it. The notebook warns if the runtime is newer.
+Neither `biotite==0.41.2` nor NumPy 1.x ships wheels past **Python 3.12**, and Colab is
+now on 3.13, so pip builds both from source. That works — it costs a few minutes on the
+install cell. The notebook says so up front rather than letting a long silent build look
+like a hang.
+
+The NumPy downgrade also makes pip list every preinstalled Colab package that wants NumPy
+2 (opencv, jax, shap and so on), and repeat that `esm` asked for `torchtext` and
+`transformers<4.47`. None of that is a failure: nothing on this path imports those
+packages, and every symbol the pipeline takes from `transformers` still exists in 5.x. The
+install cell explains the messages and then checks the two pins that actually matter.
