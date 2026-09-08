@@ -64,9 +64,15 @@ are deliberate:
   past Python 3.11 and would pull torch backwards. Nothing on the ESM-C code path imports
   it; the notebook installs the packages the import closure actually needs.
 - **`numpy<2`.** `esm` pins `biotite==0.41.2`, which requires NumPy 1.x, and biotite sits
-  on the ESM-C import path. Colab ships NumPy 2, so it has to come down; wheels built
-  against NumPy 2 keep working under 1.x, so nothing else breaks. The install cell
-  restarts the kernel by itself if NumPy changed underneath it.
+  on the ESM-C import path — `esm.utils.structure.protein_chain` imports
+  `biotite.structure.io.npz`, a module biotite deleted in 1.0, so a newer biotite is not a
+  way out. Colab ships NumPy 2, so it has to come down. The install cell restarts the
+  kernel by itself if NumPy changed underneath it.
+- **`pandas<3`.** Forced by the line above. A wheel *compiled* against NumPy 2 still runs
+  under 1.x, but pandas 3 calls `np.dtypes.StringDType`, a NumPy 2 Python API that does
+  not exist in 1.x, so Colab's pandas dies on import with `module 'numpy.dtypes' has no
+  attribute 'StringDType'`. pandas 2.2.3 is the last release that works under the pin and
+  ships a wheel for Python 3.13.
 - **No `flash-attn`.** Without it ESM-C falls back to its pure-torch rotary embedding,
   verified to give identical results, and skips a fragile CUDA build.
 
