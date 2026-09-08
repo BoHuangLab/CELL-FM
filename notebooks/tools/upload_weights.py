@@ -50,6 +50,7 @@ DEFAULT_SOURCES = {
 }
 
 CARD = """---
+license: mit
 library_name: cell-fm
 tags:
   - biology
