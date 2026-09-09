@@ -1,4 +1,4 @@
-"""Push the three CELL-FM CondenSeq checkpoints to a HF model repo.
+"""Push the CELL-FM checkpoints and notebook assets to a HF model repo.
 
 NOTE: pass a token via the HF_TOKEN environment variable; never write one into this
 file or beside it.
@@ -8,7 +8,10 @@ of LFS itself. Run this once from the cluster:
 
     python notebooks/tools/upload_weights.py --repo BoHuangLab/CELL-FM
 
-The hpa/ assets come from build_hpa_assets.py and build_pls_assets.py, which must run first.
+The built assets come from build_hpa_assets.py, build_pls_assets.py and
+build_opencell_assets.py, which must run first. --only takes a substring of the target
+name, so --only opencell/vs_ refreshes the OpenCell notebook's assets without re-pushing
+the 3.7 GB of weights that --only opencell would also match.
 
 Add --private to keep the weights unlisted, and --dry-run to see what would be
 uploaded without touching the Hub.
@@ -82,6 +85,14 @@ DEFAULT_SOURCES = {
         "/hpc/projects/group.huang/dihan.zheng/CELL-FM/"
         "finetune_opencell/vae/checkpoint-50000/pytorch_model.bin"
     ),
+    # OpenCell virtual staining assets, from build_opencell_assets.py. The vs_ prefix keeps
+    # them addressable by --only without dragging cellfm_vs.bin along; see the note above.
+    "opencell/vs_anchor_nucleus.npy": os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "assets", "vs_anchor_nucleus.npy"),
+    "opencell/vs_genes.csv": os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "assets", "vs_genes.csv"),
+    "opencell/vs_reference_cells.npz": os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "assets", "vs_reference_cells.npz"),
 }
 
 CARD = """---
@@ -110,6 +121,9 @@ Checkpoints behind the [CELL-FM CondenSeq demo]({space_url}).
 | `hpa/vae_512.bin` | Image VAE at 512x512, the one `hpa/cellfm_img2seq.bin` was trained against — a different model from `hpa/vae.bin`, not a rename | `pretrain_hpa/vae_512/checkpoint-50000` |
 | `opencell/cellfm_vs.bin` | CELL-FM virtual-staining generator for OpenCell, 256x256, single nucleus conditioning channel, fine-tuned (includes the ESM-C 600M encoder) | `finetune_opencell/cellfm_vs/checkpoint-100000` |
 | `opencell/vae.bin` | Image VAE at 256x256, the one `opencell/cellfm_vs.bin` was trained against — OpenCell-finetuned, so not interchangeable with `hpa/vae.bin` despite the matching shape | `finetune_opencell/vae/checkpoint-50000` |
+| `opencell/vs_anchor_nucleus.npy` | The nucleus every OpenCell generation is conditioned on: `(1, 256, 256)` float32 in [-1, 1]. Gene ATG7, crop `CID001813_FID00035838_proj_11` — bit-for-bit the conditioning channel of the published offline run | built |
+| `opencell/vs_genes.csv` | OpenCell's 1,311 genes: name, protein name, UniProt accession, Ensembl id, localization annotation and sequence. The metadata table minus its image paths | built |
+| `opencell/vs_reference_cells.npz` | 17 genes spanning distinct compartments, each with its own nucleus and its real protein image, float16 — the ground truth the notebook's generations are shown against | built |
 | `hpa/anchor_cell.npy` | The fixed cell every NLS-screening image is conditioned on: `(3, 256, 256)` float32 in [-1, 1], channels nucleus, ER, microtubules. HPA gene H3C13, cell crop `1194_B2_2_4` | built |
 | `hpa/anchor_masks.npz` | Two 256x256 boolean masks over that cell, `nucleus` and `cell`; cytoplasm is `cell & ~nucleus` | built |
 | `hpa/pls_anchor_nls.npz` | The cell PLS generation conditions on for nuclear signals: `cell` `(3, 512, 512)` nucleus/ER/microtubules and `protein` `(1, 512, 512)`, float32 in [-1, 1]. HPA gene PPM1G (Nucleoplasm), crop `392_B9_1_11` | built |
@@ -126,7 +140,9 @@ hyperparameters are spelled out in `notebooks/nls_screening.ipynb` and mirror
 `scripts_local/cell_fm/evaluate_img2seq_hpa_v2.sh`: 512 px, `sample_size` 128,
 `encoder_patch_size` 8, `img_generator_patch_size` 4, 8 attention heads. The OpenCell pair
 mirrors `scripts/cell_fm/evaluate_virtual_staining_opencell.sh`: 256 px, `sample_size` 64,
-`encoder_patch_size` 4, `img_generator_patch_size` 2, 18 attention heads, `cell_image` `nucl`.
+`encoder_patch_size` 4, `img_generator_patch_size` 2, 18 attention heads, `cell_image` `nucl`
+— spelled out in `notebooks/opencell_vs.ipynb`. That single conditioning channel is the one
+architectural difference a caller can see: the HPA generator takes three.
 
 Each generator must be loaded with the VAE it was trained against — pairing
 `cellfm_img2seq.bin` with the 256 px `vae.bin` gives a latent-size mismatch.

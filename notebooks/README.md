@@ -1,19 +1,32 @@
 # Notebooks
 
-Colab notebooks, one per **application** of CELL-FM — the same split the
-[hosted app](https://huggingface.co/spaces/BoHuangLab/CELL-FM) uses for its tabs. A
-notebook is the version you can open, edit and run against your own sequences; the Space
-is the version with no setup.
+Colab notebooks, one per **application** of CELL-FM. A notebook is the version you can
+open, edit and run against your own sequences; the
+[hosted app](https://huggingface.co/spaces/BoHuangLab/CELL-FM) is the version with no
+setup, and currently covers the first of them.
 
 | Notebook | | |
 |---|---|---|
 | [`condensate_titration.ipynb`](condensate_titration.ipynb) | Sequence to condensate titration curve, AUC and AAC | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/BoHuangLab/CELL-FM/blob/master/notebooks/condensate_titration.ipynb) |
 | [`nls_screening.ipynb`](nls_screening.ipynb) | Slide a window along a sequence and score each fragment for nuclear localisation | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/BoHuangLab/CELL-FM/blob/master/notebooks/nls_screening.ipynb) |
 | [`pls_generation.ipynb`](pls_generation.ipynb) | Run the model backwards: design localization signals from a cell that already shows the localization | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/BoHuangLab/CELL-FM/blob/master/notebooks/pls_generation.ipynb) |
+| [`opencell_vs.ipynb`](opencell_vs.ipynb) | Name a protein and see it virtually stained into a cell, with thirteen known proteins as the check | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/BoHuangLab/CELL-FM/blob/master/notebooks/opencell_vs.ipynb) |
 
-All three notebooks pull their model code from the public Space with `snapshot_download`, so
-the notebooks and the hosted app cannot drift: same configs, same fixed conditioning image,
-same metric definitions. None vendors any model code of its own.
+All four notebooks pull their model code from the public Space with `snapshot_download`, so
+they cannot drift from each other or from the hosted app on the thing they share — the model
+implementation. None vendors any model code of its own.
+
+What is *not* shared is the configuration. The Space currently serves one application,
+condensate titration, so there is no hosted counterpart to pin the other three against;
+each transcribes its hyperparameters from the shell script that produced its checkpoint, and
+says which one in the cell that builds the config.
+
+`opencell_vs.ipynb` is the only one built on the OpenCell fine-tune, and the only one whose
+conditioning image has a **single** channel: `cell_image='nucl'` against the HPA notebooks'
+`nucl,er,mt`. Handing that generator three channels fails inside a `Conv2d` rather than
+degrading quietly. It is also the only notebook whose input is a protein *identity* rather
+than a sequence, so it ships OpenCell's 1,311-gene table as an asset and falls back to
+UniProt for anything outside it.
 
 ## Dependency pins, and why
 
