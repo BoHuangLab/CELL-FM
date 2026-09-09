@@ -8,7 +8,7 @@ of LFS itself. Run this once from the cluster:
 
     python notebooks/tools/upload_weights.py --repo BoHuangLab/CELL-FM
 
-The hpa/ assets come from build_hpa_assets.py, which must run first.
+The hpa/ assets come from build_hpa_assets.py and build_pls_assets.py, which must run first.
 
 Add --private to keep the weights unlisted, and --dry-run to see what would be
 uploaded without touching the Hub.
@@ -53,6 +53,19 @@ DEFAULT_SOURCES = {
         "/hpc/projects/group.huang/dihan.zheng/CELL-FM/"
         "pretrain_hpa/vae_512/checkpoint-50000/pytorch_model.bin"
     ),
+    # PLS generation: img2seq conditions on a cell that already shows the localisation
+    # being asked for, so each anchor ships its protein channel as well as the cell stack.
+    # Built by build_pls_assets.py, which must run first.
+    "hpa/pls_anchor_nls.npz": os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "assets", "pls_anchor_nls.npz"),
+    "hpa/pls_anchor_nes.npz": os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "assets", "pls_anchor_nes.npz"),
+    "hpa/proteome_aa_counts.json": os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "assets", "proteome_aa_counts.json"),
+    "hpa/pls_reference_nls.csv": os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "assets", "pls_reference_nls.csv"),
+    "hpa/pls_reference_nes.csv": os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "assets", "pls_reference_nes.csv"),
     "hpa/anchor_cell.npy": os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "assets", "anchor_cell.npy"),
     "hpa/anchor_masks.npz": os.path.join(
@@ -85,6 +98,11 @@ Checkpoints behind the [CELL-FM CondenSeq demo]({space_url}).
 | `hpa/vae_512.bin` | Image VAE at 512x512, the one `hpa/cellfm_img2seq.bin` was trained against — a different model from `hpa/vae.bin`, not a rename | `pretrain_hpa/vae_512/checkpoint-50000` |
 | `hpa/anchor_cell.npy` | The fixed cell every NLS-screening image is conditioned on: `(3, 256, 256)` float32 in [-1, 1], channels nucleus, ER, microtubules. HPA gene H3C13, cell crop `1194_B2_2_4` | built |
 | `hpa/anchor_masks.npz` | Two 256x256 boolean masks over that cell, `nucleus` and `cell`; cytoplasm is `cell & ~nucleus` | built |
+| `hpa/pls_anchor_nls.npz` | The cell PLS generation conditions on for nuclear signals: `cell` `(3, 512, 512)` nucleus/ER/microtubules and `protein` `(1, 512, 512)`, float32 in [-1, 1]. HPA gene PPM1G (Nucleoplasm), crop `392_B9_1_11` | built |
+| `hpa/pls_anchor_nes.npz` | The same for export signals. HPA gene DIAPH1 (Cytosol, Plasma membrane), crop `1608_B3_1_1` | built |
+| `hpa/proteome_aa_counts.json` | Residue counts over the 12,894 HPA proteins (7,940,784 residues), the proteome baseline the frequency analysis compares against | built |
+| `hpa/pls_reference_nls.csv` | The 315 published NLS signals, 10-25 aa, for comparison against a short run | `output/hpa/pls_generation/nls` |
+| `hpa/pls_reference_nes.csv` | The 320 published NES signals | `output/hpa/pls_generation/nes` |
 
 Hyperparameters for the CondenSeq models are set in `pipeline.py` in the Space and mirror
 `scripts/cell_fm_cs/evaluate_seq2img.sh` and

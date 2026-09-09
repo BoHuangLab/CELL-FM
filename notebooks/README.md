@@ -9,10 +9,15 @@ is the version with no setup.
 |---|---|---|
 | [`condensate_titration.ipynb`](condensate_titration.ipynb) | Sequence to condensate titration curve, AUC and AAC | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/BoHuangLab/CELL-FM/blob/master/notebooks/condensate_titration.ipynb) |
 | [`nls_screening.ipynb`](nls_screening.ipynb) | Slide a window along a sequence and score each fragment for nuclear localisation | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/BoHuangLab/CELL-FM/blob/master/notebooks/nls_screening.ipynb) |
+| [`pls_generation.ipynb`](pls_generation.ipynb) | Run the model backwards: design localization signals from a cell that already shows the localization | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/BoHuangLab/CELL-FM/blob/master/notebooks/pls_generation.ipynb) |
 
-Both notebooks pull their model code from the public Space with `snapshot_download`, so the
-notebooks and the hosted app cannot drift: same configs, same fixed conditioning image, same
-metric definitions. Neither vendors any model code of its own.
+All three notebooks pull their model code from the public Space with `snapshot_download`, so
+the notebooks and the hosted app cannot drift: same configs, same fixed conditioning image,
+same metric definitions. None vendors any model code of its own.
+
+`pls_generation.ipynb` is the only one that runs the model image-to-sequence, and so the only
+one that loads `hpa/cellfm_img2seq.bin` — a 512 px model with its own `hpa/vae_512.bin`.
+Pairing it with the 256 px `hpa/vae.bin` the NLS notebook uses is a latent-size mismatch.
 
 ## Dependency pins, and why
 
