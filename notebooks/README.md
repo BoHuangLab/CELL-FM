@@ -16,18 +16,6 @@ All four notebooks pull their model code from the public Space with `snapshot_do
 they cannot drift from each other or from the hosted app on the thing they share — the model
 implementation. None vendors any model code of its own.
 
-What is *not* shared is the configuration. The Space currently serves one application,
-condensate titration, so there is no hosted counterpart to pin the other three against;
-each transcribes its hyperparameters from the shell script that produced its checkpoint, and
-says which one in the cell that builds the config.
-
-`opencell_vs.ipynb` is the only one built on the OpenCell fine-tune, and the only one whose
-conditioning image has a **single** channel: `cell_image='nucl'` against the HPA notebooks'
-`nucl,er,mt`. Handing that generator three channels fails inside a `Conv2d` rather than
-degrading quietly. It is also the only notebook whose input is a protein *identity* rather
-than a sequence, so it ships OpenCell's 1,311-gene table as an asset and falls back to
-UniProt for anything outside it.
-
 ## Dependency pins, and why
 
 Colab ships torch, numpy, pandas and matplotlib; the notebook installs the rest. Two
