@@ -70,6 +70,18 @@ DEFAULT_SOURCES = {
         os.path.dirname(os.path.abspath(__file__)), "assets", "anchor_cell.npy"),
     "hpa/anchor_masks.npz": os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "assets", "anchor_masks.npz"),
+    # OpenCell virtual staining, fine-tuned from the pretrained model rather than trained
+    # from scratch. 256 px with a single nucleus conditioning channel, where the HPA pair
+    # takes three -- so this generator wants opencell/vae.bin and nothing else: its own
+    # copy of the VAE tensors is bitwise identical to that file.
+    "opencell/cellfm_vs.bin": (
+        "/hpc/projects/group.huang/dihan.zheng/CELL-FM/"
+        "finetune_opencell/cellfm_vs/checkpoint-100000/pytorch_model.bin"
+    ),
+    "opencell/vae.bin": (
+        "/hpc/projects/group.huang/dihan.zheng/CELL-FM/"
+        "finetune_opencell/vae/checkpoint-50000/pytorch_model.bin"
+    ),
 }
 
 CARD = """---
@@ -96,6 +108,8 @@ Checkpoints behind the [CELL-FM CondenSeq demo]({space_url}).
 | `hpa/vae.bin` | Image VAE at 256x256, the one `hpa/cellfm_seq2img.bin` was trained against | `pretrain_hpa/vae/checkpoint-50000` |
 | `hpa/cellfm_img2seq.bin` | CELL-FM image-to-sequence model for HPA, 512x512, 3-channel conditioning (includes the ESM-C 600M encoder) | `pretrain_hpa/cellfm_img2seq/checkpoint-60000` |
 | `hpa/vae_512.bin` | Image VAE at 512x512, the one `hpa/cellfm_img2seq.bin` was trained against — a different model from `hpa/vae.bin`, not a rename | `pretrain_hpa/vae_512/checkpoint-50000` |
+| `opencell/cellfm_vs.bin` | CELL-FM virtual-staining generator for OpenCell, 256x256, single nucleus conditioning channel, fine-tuned (includes the ESM-C 600M encoder) | `finetune_opencell/cellfm_vs/checkpoint-100000` |
+| `opencell/vae.bin` | Image VAE at 256x256, the one `opencell/cellfm_vs.bin` was trained against — OpenCell-finetuned, so not interchangeable with `hpa/vae.bin` despite the matching shape | `finetune_opencell/vae/checkpoint-50000` |
 | `hpa/anchor_cell.npy` | The fixed cell every NLS-screening image is conditioned on: `(3, 256, 256)` float32 in [-1, 1], channels nucleus, ER, microtubules. HPA gene H3C13, cell crop `1194_B2_2_4` | built |
 | `hpa/anchor_masks.npz` | Two 256x256 boolean masks over that cell, `nucleus` and `cell`; cytoplasm is `cell & ~nucleus` | built |
 | `hpa/pls_anchor_nls.npz` | The cell PLS generation conditions on for nuclear signals: `cell` `(3, 512, 512)` nucleus/ER/microtubules and `protein` `(1, 512, 512)`, float32 in [-1, 1]. HPA gene PPM1G (Nucleoplasm), crop `392_B9_1_11` | built |
@@ -110,7 +124,9 @@ Hyperparameters for the CondenSeq models are set in `pipeline.py` in the Space a
 hyperparameters are spelled out in `notebooks/nls_screening.ipynb` and mirror
 `scripts/cell_fm/evaluate_virtual_staining_hpa_dict.sh`. The img2seq pair mirrors
 `scripts_local/cell_fm/evaluate_img2seq_hpa_v2.sh`: 512 px, `sample_size` 128,
-`encoder_patch_size` 8, `img_generator_patch_size` 4, 8 attention heads.
+`encoder_patch_size` 8, `img_generator_patch_size` 4, 8 attention heads. The OpenCell pair
+mirrors `scripts/cell_fm/evaluate_virtual_staining_opencell.sh`: 256 px, `sample_size` 64,
+`encoder_patch_size` 4, `img_generator_patch_size` 2, 18 attention heads, `cell_image` `nucl`.
 
 Each generator must be loaded with the VAE it was trained against — pairing
 `cellfm_img2seq.bin` with the 256 px `vae.bin` gives a latent-size mismatch.

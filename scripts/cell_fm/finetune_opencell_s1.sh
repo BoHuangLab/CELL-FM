@@ -5,7 +5,6 @@ ulimit -c unlimited
 export WANDB_RUN_NAME=FT_OC_CELLFM_all_S1
 export WANDB_PROJECT=CELL-FM
 [ -z "${output_dir}" ] && output_dir=finetune_opencell/$WANDB_RUN_NAME
-# [ -z "${output_dir}" ] && output_dir='./PT_Test'
 
 # Dataset
 [ -z "${data_path}" ] && data_path='/hpc/reference/opencell/opencell'
