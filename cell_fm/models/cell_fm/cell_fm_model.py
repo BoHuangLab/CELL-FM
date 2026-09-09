@@ -227,9 +227,23 @@ class CELLFMModel(PreTrainedModel):
     def image_to_sequence(self, protein_seq, protein_seq_mask, protein_img, cell_img, progress=True, sampling_strategy='oaardm', order='l2r', temperature=1.0):
         if sampling_strategy == "oaardm":
             return self.oaardm_sample(protein_seq, protein_seq_mask, protein_img, cell_img, progress, order, temperature)
+        raise ValueError(f"Sampling strategy {sampling_strategy} is not supported")
 
     def oaardm_sample(self, protein_seq, protein_seq_mask, protein_img, cell_img, progress=True, order='l2r', temperature=1.0):
-        loc = torch.where(protein_seq_mask.bool().squeeze())[0].cpu().numpy()
+        # One sequence per call. The fill order below is a single list of positions shared by
+        # the whole batch, which only means anything if there is one mask to follow. Batched,
+        # torch.where on the 2-D mask returns row indices rather than positions: a batch of 2
+        # would overwrite positions 0 and 1 -- the <cls> token and the first residue -- and
+        # leave the masked tail untouched, decoding as '_' with no error raised.
+        if protein_seq.shape[0] != 1:
+            raise ValueError(
+                f"oaardm_sample expects batch size 1, got {protein_seq.shape[0]}. "
+                "Call it once per sequence."
+            )
+
+        sampled_seq = protein_seq.clone()
+
+        loc = torch.where(protein_seq_mask.bool().reshape(-1))[0].cpu().numpy()
 
         if order == 'l2r':
             loc = np.sort(loc)
@@ -246,14 +260,14 @@ class CELLFMModel(PreTrainedModel):
             for i in loc:
                 t0, t1 = self.transport.check_interval(self.transport.train_eps, self.transport.sample_eps)
                 # t1 = 1.0, t0 = 0.0
-                t = torch.tensor([t1] * protein_seq.shape[0], device=protein_seq.device)
-                seq_output = self.net(protein_img_latent, cell_img, protein_seq, t, img_mask_ratio=0)[1]
+                t = torch.tensor([t1] * sampled_seq.shape[0], device=sampled_seq.device)
+                seq_output = self.net(protein_img_latent, cell_img, sampled_seq, t, img_mask_ratio=0)[1]
                 p = seq_output[:, i, 4:4+20] # sample at location i (random), dont let it predict non-standard AA
                 p = torch.nn.functional.softmax(p / temperature, dim=1) # softmax over categorical probs
                 p_sample = torch.multinomial(p, num_samples=1)
-                protein_seq[:, i] = p_sample.squeeze() + 4
+                sampled_seq[:, i] = p_sample.squeeze() + 4
 
-        return protein_seq
+        return sampled_seq
 
     def embed(self, protein_seq, protein_img, cell_img, img_mask_ratio=0):
         with torch.no_grad():

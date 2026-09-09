@@ -114,7 +114,22 @@ class CELLFMCSModel(BaseCELLFMModel):
             device=device,
         )
 
-        loc = torch.where(protein_seq_mask.bool().squeeze())[0].cpu().numpy()
+        # One sequence per call -- see the note in cell_fm_model.oaardm_sample. Batched,
+        # torch.where on the 2-D mask returns row indices rather than positions, and the
+        # sampler silently rewrites the wrong tokens.
+        if protein_seq.shape[0] != 1:
+            raise ValueError(
+                f"oaardm_sample expects batch size 1, got {protein_seq.shape[0]}. "
+                "Call it once per sequence."
+            )
+
+        # Fill a copy, not the caller's tensor. Writing through protein_seq leaves it with
+        # no <mask> tokens left, so a caller looping over num_gen with the same prompt
+        # resamples the previous draw instead of starting over and its draws come out as a
+        # chain -- near-duplicates, and correlated samples under any test applied to them.
+        sampled_seq = protein_seq.clone()
+
+        loc = torch.where(protein_seq_mask.bool().reshape(-1))[0].cpu().numpy()
         if order == "l2r":
             loc = np.sort(loc)
         elif order == "random":
@@ -138,7 +153,7 @@ class CELLFMCSModel(BaseCELLFMModel):
                 seq_output = self.net.inference(
                     protein_img_latent,
                     cell_img,
-                    protein_seq,
+                    sampled_seq,
                     protein_intensity_level,
                     t,
                 )[1]
@@ -146,9 +161,9 @@ class CELLFMCSModel(BaseCELLFMModel):
                 aa_logits = logits_i[:, allowed_token_ids]
                 probs = torch.nn.functional.softmax(aa_logits / temperature, dim=-1)
                 sample_idx = torch.multinomial(probs, num_samples=1).squeeze(-1)
-                protein_seq[:, i] = allowed_token_ids[sample_idx]
+                sampled_seq[:, i] = allowed_token_ids[sample_idx]
 
-        return protein_seq
+        return sampled_seq
 
     def recon(self, protein_seq, protein_img, cell_img, protein_intensity_level):
         with torch.no_grad():
