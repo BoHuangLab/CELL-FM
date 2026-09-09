@@ -101,8 +101,8 @@ Checkpoints behind the [CELL-FM CondenSeq demo]({space_url}).
 | `hpa/pls_anchor_nls.npz` | The cell PLS generation conditions on for nuclear signals: `cell` `(3, 512, 512)` nucleus/ER/microtubules and `protein` `(1, 512, 512)`, float32 in [-1, 1]. HPA gene PPM1G (Nucleoplasm), crop `392_B9_1_11` | built |
 | `hpa/pls_anchor_nes.npz` | The same for export signals. HPA gene DIAPH1 (Cytosol, Plasma membrane), crop `1608_B3_1_1` | built |
 | `hpa/proteome_aa_counts.json` | Residue counts over the 12,894 HPA proteins (7,940,784 residues), the proteome baseline the frequency analysis compares against | built |
-| `hpa/pls_reference_nls.csv` | The 315 published NLS signals, 10-25 aa, for comparison against a short run | `output/hpa/pls_generation/nls` |
-| `hpa/pls_reference_nes.csv` | The 320 published NES signals | `output/hpa/pls_generation/nes` |
+| `hpa/pls_reference_nls.csv` | The 320 published NLS signals: 20 independent draws at each of 16 tail lengths, 10-25 aa | `output/hpa/pls_generation/nls` |
+| `hpa/pls_reference_nes.csv` | The same 320 for export signals | `output/hpa/pls_generation/nes` |
 
 Hyperparameters for the CondenSeq models are set in `pipeline.py` in the Space and mirror
 `scripts/cell_fm_cs/evaluate_seq2img.sh` and
@@ -123,14 +123,23 @@ def main() -> None:
     ap.add_argument("--space-url", default="https://huggingface.co/spaces/BoHuangLab/CELL-FM")
     ap.add_argument("--private", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--only", default="",
+                    help="upload only the targets whose name contains this substring, e.g. "
+                         "--only pls_reference. The card is rewritten either way, so a "
+                         "partial upload still leaves the repo describing all of it.")
     args = ap.parse_args()
 
-    missing = [p for p in DEFAULT_SOURCES.values() if not os.path.exists(p)]
+    sources = {k: v for k, v in DEFAULT_SOURCES.items() if args.only in k}
+    if not sources:
+        raise SystemExit(f"--only {args.only!r} matched none of: "
+                         + ", ".join(DEFAULT_SOURCES))
+
+    missing = [p for p in sources.values() if not os.path.exists(p)]
     if missing:
         raise SystemExit("missing checkpoint(s):\n  " + "\n  ".join(missing))
 
-    total = sum(os.path.getsize(p) for p in DEFAULT_SOURCES.values())
-    for name, path in DEFAULT_SOURCES.items():
+    total = sum(os.path.getsize(p) for p in sources.values())
+    for name, path in sources.items():
         print(f"  {name:22s} {os.path.getsize(path)/1e9:5.2f} GB  <- {path}")
     print(f"  {'total':22s} {total/1e9:5.2f} GB  -> {args.repo}")
 
@@ -143,7 +152,7 @@ def main() -> None:
     api = HfApi()
     api.create_repo(args.repo, repo_type="model", private=args.private, exist_ok=True)
 
-    for name, path in DEFAULT_SOURCES.items():
+    for name, path in sources.items():
         print(f"uploading {name} ...")
         api.upload_file(
             path_or_fileobj=path,

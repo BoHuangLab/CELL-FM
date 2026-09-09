@@ -19,6 +19,12 @@ same metric definitions. None vendors any model code of its own.
 one that loads `hpa/cellfm_img2seq.bin` — a 512 px model with its own `hpa/vae_512.bin`.
 Pairing it with the 256 px `hpa/vae.bin` the NLS notebook uses is a latent-size mismatch.
 
+It is also the long one. The other two answer in a couple of minutes; this one defaults to the
+settings behind the published enrichment figure — 16 tail lengths × 20 draws × 2 signal types,
+so 11,200 forward passes, measured at 10.2 minutes on an A40 and perhaps 40 on a Colab T4.
+Shortening `LENGTHS` or `DRAWS_PER_LENGTH` scales that down roughly linearly, at the cost of a
+noisier figure.
+
 ## Dependency pins, and why
 
 Colab ships torch, numpy, pandas and matplotlib; the notebook installs the rest. Two

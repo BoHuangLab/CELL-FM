@@ -9,7 +9,7 @@ files, so the notebook ships those instead:
     pls_anchor_nls.npz       cell (3, 512, 512) + protein (1, 512, 512), float32 in [-1, 1]
     pls_anchor_nes.npz       same, for the cytosolic anchor
     proteome_aa_counts.json  20 residue counts over the 12,894 HPA proteins
-    pls_reference_nls.csv    the published 315 generated signals
+    pls_reference_nls.csv    the published 320 generated signals
     pls_reference_nes.csv    the published 320 generated signals
 
 Two things differ from build_hpa_assets.py, and both matter:
