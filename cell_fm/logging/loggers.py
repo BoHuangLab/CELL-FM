@@ -9,7 +9,13 @@ from loguru import logger
 from cell_fm.utils.dist_utils import is_master_node
 from transformers import TrainerCallback
 
-import wandb  # isort:skip
+# wandb is only used by the training callback below, so it is optional rather than a
+# required install: the Colab notebooks import cell_fm through this module and Colab has
+# no wandb, which would otherwise make every notebook fail at its first import.
+try:
+    import wandb  # isort:skip
+except ImportError:  # pragma: no cover
+    wandb = None
 
 handlers = {}
 
@@ -65,7 +71,7 @@ class MetricLogger(object):
                 log_data[k] = log_data[k].detach().item()
 
         logger.info(" | ".join([f"{k}={v:.4g}" for k, v in log_data.items()]))
-        if wandb.run is not None:
+        if wandb is not None and wandb.run is not None:
             # Add prefix
             if prefix:
                 log_data = {f"{prefix}/{k}": v for k, v in log_data.items()}

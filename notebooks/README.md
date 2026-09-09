@@ -12,9 +12,22 @@ setup, and currently covers the first of them.
 | [`pls_generation.ipynb`](pls_generation.ipynb) | Run the model backwards: design localization signals from a cell that already shows the localization | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/BoHuangLab/CELL-FM/blob/master/notebooks/pls_generation.ipynb) |
 | [`opencell_vs.ipynb`](opencell_vs.ipynb) | Name a protein and see it virtually stained into a cell, with thirteen known proteins as the check | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/BoHuangLab/CELL-FM/blob/master/notebooks/opencell_vs.ipynb) |
 
-All four notebooks pull their model code from the public Space with `snapshot_download`, so
-they cannot drift from each other or from the hosted app on the thing they share — the model
-implementation. None vendors any model code of its own.
+All four notebooks fetch their model code by shallow-cloning this repository, and print the
+commit they resolved, so a result can always be traced back to the code that produced it.
+None vendors any model code of its own. Weights come separately, from
+[the weights repo](https://huggingface.co/BoHuangLab/CELL-FM) — code from the repository
+that defines it, weights from the repo built to hold them.
+
+They used to clone the published Space instead. That worked while the Space happened to
+carry everything they needed, and stopped the moment one of them needed
+`cell_fm/models/vit_cls`, which the Space does not ship. Cloning the repository removes the
+whole class of problem: anything in CELL-FM is reachable from a notebook. It is also why
+the CondenSeq app's `pipeline.py` and `metrics.py` now live in `cell_fm/apps/condenseq/`
+rather than only inside the Space directory, which is not tracked.
+
+The notebooks track `master`, so a breaking change reaches them as soon as it lands — the
+printed commit is what makes that debuggable rather than mysterious. The Space is a separate
+deployment on its own cadence and can lag behind; it is no longer what the notebooks read.
 
 ## Dependency pins, and why
 

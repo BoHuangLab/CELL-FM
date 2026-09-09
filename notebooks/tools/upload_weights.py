@@ -30,6 +30,13 @@ DEFAULT_SOURCES = {
         "/hpc/projects/group.huang/dihan.zheng/CELL-FM/"
         "pretrain_condenseq/vae/checkpoint-50000/pytorch_model.bin"
     ),
+    # The DAPI channel every CondenSeq generation is conditioned on. It used to sit beside
+    # pipeline.py in the Space and be found through __file__; publishing it here is what
+    # lets that module live in the tracked tree instead of only inside a deployment.
+    "condenseq/reference_nucleus.npy": (
+        "/hpc/projects/group.huang/dihan.zheng/CELL-FM/"
+        "huggingface_space/assets/reference_nucleus.npy"
+    ),
     "condenseq/vit_cls.bin": (
         "/hpc/projects/group.huang/dihan.zheng/CELL-Diff2-Dev/"
         "pretrain_condenseq_celldiff2_split/PT_CondenSeq_img_ViT_cls_R1/"
@@ -48,6 +55,13 @@ DEFAULT_SOURCES = {
     ),
     # img2seq runs at 512 px and needs its own VAE; vae.bin above is the 256 px one that
     # pairs with the seq2img generator, and the NLS notebook fetches it by that name.
+    # Image-embedding ViT for HPA: a 12-layer, 512-dim, 8-head encoder trained to name the
+    # protein in an image (13,908 classes), used for the representation rather than the
+    # prediction. Takes FOUR channels -- protein plus nucleus, ER and microtubules.
+    "hpa/vit.bin": (
+        "/hpc/projects/group.huang/dihan.zheng/CELL-FM/"
+        "pretrain_hpa/vit/checkpoint-16000/pytorch_model.bin"
+    ),
     "hpa/cellfm_img2seq.bin": (
         "/hpc/projects/group.huang/dihan.zheng/CELL-FM/"
         "pretrain_hpa/cellfm_img2seq/checkpoint-60000/pytorch_model.bin"
@@ -85,6 +99,14 @@ DEFAULT_SOURCES = {
         "/hpc/projects/group.huang/dihan.zheng/CELL-FM/"
         "finetune_opencell/vae/checkpoint-50000/pytorch_model.bin"
     ),
+    # The same ViT for OpenCell, fine-tuned from the HPA one. Same backbone, but the input
+    # stem takes TWO channels (protein and nucleus) against HPA's four, and the head has
+    # 1,311 classes -- one per OpenCell gene. The two are not interchangeable: the channel
+    # count is fixed in conv_proj and a mismatch fails there.
+    "opencell/vit.bin": (
+        "/hpc/projects/group.huang/dihan.zheng/CELL-FM/"
+        "finetune_opencell/vit/checkpoint-10000/pytorch_model.bin"
+    ),
     # OpenCell virtual staining assets, from build_opencell_assets.py. The vs_ prefix keeps
     # them addressable by --only without dragging cellfm_vs.bin along; see the note above.
     "opencell/vs_anchor_nucleus.npy": os.path.join(
@@ -115,15 +137,18 @@ Checkpoints behind the [CELL-FM CondenSeq demo]({space_url}).
 | `condenseq/cellfm_seq2img.bin` | CELL-FM CS sequence-to-image generator (includes the ESM-C 600M encoder) | `pretrain_condenseq/cellfm_seq2img/checkpoint-50000` |
 | `condenseq/vae.bin` | Image VAE, 160x160, 3 down blocks, 4 latent channels | `pretrain_condenseq/vae/checkpoint-50000` |
 | `condenseq/vit_cls.bin` | ViT condensed/diffuse classifier, 2-channel 160x160 input | `PT_CondenSeq_img_ViT_cls_R1/checkpoint-10000` |
+| `condenseq/reference_nucleus.npy` | The DAPI channel every CondenSeq generation is conditioned on: `(1, 160, 160)` float32 in [-1, 1]. CondenSeq protein index 12626, image 0 — the same one the offline seq2img runs used | built |
 | `hpa/cellfm_seq2img.bin` | CELL-FM virtual-staining generator for HPA, 256x256, 3-channel conditioning (includes the ESM-C 600M encoder) | `pretrain_hpa/cellfm_seq2img/checkpoint-50000` |
 | `hpa/vae.bin` | Image VAE at 256x256, the one `hpa/cellfm_seq2img.bin` was trained against | `pretrain_hpa/vae/checkpoint-50000` |
+| `hpa/vit.bin` | Image-embedding ViT for HPA: 12 layers, 512 hidden, 2048 MLP, 8 heads, patch 4, 256x256 input. Trained to identify the protein in an image over 13,908 classes; the embedding is the representation, not the prediction. Four input channels — protein, nucleus, ER, microtubules | `pretrain_hpa/vit/checkpoint-16000` |
 | `hpa/cellfm_img2seq.bin` | CELL-FM image-to-sequence model for HPA, 512x512, 3-channel conditioning (includes the ESM-C 600M encoder) | `pretrain_hpa/cellfm_img2seq/checkpoint-60000` |
 | `hpa/vae_512.bin` | Image VAE at 512x512, the one `hpa/cellfm_img2seq.bin` was trained against — a different model from `hpa/vae.bin`, not a rename | `pretrain_hpa/vae_512/checkpoint-50000` |
 | `opencell/cellfm_vs.bin` | CELL-FM virtual-staining generator for OpenCell, 256x256, single nucleus conditioning channel, fine-tuned (includes the ESM-C 600M encoder) | `finetune_opencell/cellfm_vs/checkpoint-100000` |
 | `opencell/vae.bin` | Image VAE at 256x256, the one `opencell/cellfm_vs.bin` was trained against — OpenCell-finetuned, so not interchangeable with `hpa/vae.bin` despite the matching shape | `finetune_opencell/vae/checkpoint-50000` |
+| `opencell/vit.bin` | The same ViT fine-tuned on OpenCell, 1,311 classes. Identical backbone to `hpa/vit.bin`, but its input stem takes **two** channels — protein and nucleus — where the HPA one takes four, so the two cannot be swapped: the count is fixed in `conv_proj` and a mismatch fails there | `finetune_opencell/vit/checkpoint-10000` |
 | `opencell/vs_anchor_nucleus.npy` | The nucleus every OpenCell generation is conditioned on: `(1, 256, 256)` float32 in [-1, 1]. Gene ATG7, crop `CID001813_FID00035838_proj_11` — bit-for-bit the conditioning channel of the published offline run | built |
 | `opencell/vs_genes.csv` | OpenCell's 1,311 genes: name, protein name, UniProt accession, Ensembl id, localization annotation and sequence. The metadata table minus its image paths | built |
-| `opencell/vs_reference_cells.npz` | 17 genes spanning distinct compartments, each with its own nucleus and its real protein image, float16 — the ground truth the notebook's generations are shown against | built |
+| `opencell/vs_reference_cells.npz` | Four proteins in two matched pairs (POLR1A/SNRPF nuclear, LSM14A/DDX6 both P-body), each with 16 real OpenCell crops as `(nucleus, protein)` float16 pairs. One is displayed beside the generated image; all 16 are the real distribution the notebook's UMAP compares against, and they are the first 16 OpenCell publishes rather than the best-looking | built |
 | `hpa/anchor_cell.npy` | The fixed cell every NLS-screening image is conditioned on: `(3, 256, 256)` float32 in [-1, 1], channels nucleus, ER, microtubules. HPA gene H3C13, cell crop `1194_B2_2_4` | built |
 | `hpa/anchor_masks.npz` | Two 256x256 boolean masks over that cell, `nucleus` and `cell`; cytoplasm is `cell & ~nucleus` | built |
 | `hpa/pls_anchor_nls.npz` | The cell PLS generation conditions on for nuclear signals: `cell` `(3, 512, 512)` nucleus/ER/microtubules and `protein` `(1, 512, 512)`, float32 in [-1, 1]. HPA gene PPM1G (Nucleoplasm), crop `392_B9_1_11` | built |
