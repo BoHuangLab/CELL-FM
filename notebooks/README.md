@@ -37,12 +37,20 @@ choices are deliberate:
 - **`esm==3.2.1.post1` with `--no-deps`.** Its metadata requires `torchtext`, which has no
   wheel past Python 3.11 and would pull torch backwards. Nothing on the ESM-C code path
   imports it; the notebook installs the packages the import closure actually needs.
-- **`transformers<4.48.2`.** `esm`'s own bound, and it is behavioural rather than cosmetic.
-  4.47 replaced the special-token properties on `PreTrainedTokenizer` with a
-  `_special_tokens_map` served through `__getattr__`; a tokenizer that has not adapted
-  returns `mask_token = None`, and generation then dies in `esm/utils/encoding.py` with
-  `replace() argument 2 must be str, not None` — at generation time, not at import.
-  `esm 3.2` adapted to it, and the bound is where that adaptation stops being tested.
+- **`transformers>=4.47,<4.48.2`.** A range, and both ends matter for different reasons.
+  4.47 is where `transformers` stopped assigning special tokens with `setattr` and began
+  serving them through `__getattr__`. `esm 3.2`'s `EsmSequenceTokenizer` builds
+  `cls_token`, `mask_token` and the rest as read-only properties on top of that, so on
+  4.46 or older it cannot construct at all: `property 'cls_token' of
+  'EsmSequenceTokenizer' object has no setter`, raised while the model is being built,
+  before any check in the notebook runs. Above 4.48.2 — `esm`'s own declared bound — the
+  plumbing moves again and `mask_token` comes back `None`, which kills generation later,
+  inside `esm/utils/encoding.py`, with `replace() argument 2 must be str, not None`.
+
+  The lower bound is not redundant. Colab preinstalls a `transformers` that already
+  satisfies `<4.48.2`, and pip leaves a satisfied requirement alone rather than upgrading
+  it — so with only the upper bound the pin quietly did nothing on a fresh runtime, and
+  whether the notebook worked depended on which version Colab happened to ship.
 - **No `flash-attn`.** Without it ESM-C falls back to its pure-torch rotary embedding,
   verified to give identical results, and skips a fragile CUDA build.
 - **`USE_TF=0` and `USE_FLAX=0`**, set before `transformers` is first imported.
