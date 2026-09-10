@@ -8,9 +8,8 @@ crops to reach one of them. The notebook ships these instead:
                             offline OpenCell run conditions on
     vs_genes.csv            1311 genes: name, protein name, uniprot, ensembl, locations,
                             sequence. The metadata CSV minus image_paths, which is 92% of it
-    vs_reference_cells.npz  4 genes x 16 crops x (nucleus, protein), float16. Section 2
-                            shows one crop; the embedding section embeds all 16 as the real
-                            distribution its UMAP compares the generated images against
+    vs_reference_cells.npz  4 genes x (nucleus, protein), float16 -- the real image shown
+                            beside each generation in section 2
 
 The vs_ prefix is load-bearing: upload_weights.py --only is a plain substring match, so
 without it "--only opencell" would sweep up cellfm_vs.bin and re-push 3.7 GB of weights to
@@ -61,16 +60,14 @@ REFERENCE_GENES = ["POLR1A", "SNRPF", "LSM14A", "DDX6"]
 # LSM14A and DDX6 carry the *same* OpenCell annotation, big_aggregates, being both P-body
 # proteins -- a model that had only learned the coarse label would render them identically.
 
-# How many real crops to bake per gene. These are what the notebook's UMAP compares the
-# generated images against, so they are a SAMPLE of the real distribution: take the first
-# REFERENCE_CROPS in image_paths order, unbiased. Picking the highest-contrast ones instead
-# would bias exactly the thing the figure measures.
-REFERENCE_CROPS = 16
-
-# Which single crop section 2 displays. Here choosing by contrast IS right -- it is a
-# display choice over the already-sampled 16, not a filter on the sample. Index 0 alone is
-# a poor default: measured across the first eight crops it has the weakest protein-channel
-# contrast for several genes, which would put washed-out cells in the panel.
+# Which crop to bake. Index 0 alone is a poor default: measured across the first eight, it
+# has the weakest protein-channel contrast for several genes, which would put washed-out
+# cells in the panel. Take the highest-contrast of the first few instead -- deterministic,
+# and a display choice rather than a filter on anything measured.
+#
+# One crop per gene, not sixteen: the notebook shows a single real image beside each
+# generation and embeds only generated cells, so more would be download nobody reads.
+REFERENCE_CANDIDATES = 8
 
 IMG_CROP_SIZE = 256
 IMG_RESIZE = 256
@@ -193,24 +190,16 @@ def main():
         if gene not in meta_by_gene.index:
             raise SystemExit(f"reference gene {gene} is not in {META_CSV}")
         row = meta_by_gene.loc[gene]
-        paths = image_paths(row)
-        if len(paths) < REFERENCE_CROPS:
-            raise SystemExit(f"{gene} has only {len(paths)} crops, need {REFERENCE_CROPS}")
-        crops = paths[:REFERENCE_CROPS]          # unbiased: the first N, not the best N
-        pairs = [get_img(p) for p in crops]
-
-        proteins = np.stack([p for p, _ in pairs]).astype(np.float16)   # (N, 1, 256, 256)
-        nuclei = np.stack([n for _, n in pairs]).astype(np.float16)
-        arrays[f"{gene}/protein"] = proteins
-        arrays[f"{gene}/nucleus"] = nuclei
-
-        # the crop section 2 shows: most structure in the protein channel, among the 16
-        show = int(np.argmax([p.std() for p in proteins.astype(np.float32)]))
+        candidates = image_paths(row)[:REFERENCE_CANDIDATES]
+        pairs = [get_img(p) for p in candidates]
+        best = int(np.argmax([p.std() for p, _ in pairs]))
+        protein, nucleus = pairs[best]
+        arrays[f"{gene}/protein"] = protein.astype(np.float16)
+        arrays[f"{gene}/nucleus"] = nucleus.astype(np.float16)
         index.append({"gene_name": gene, "locations": row["locations"],
                       "protein_name": row["protein_name"], "uniprot": row["uniprot"],
-                      "n_crops": len(crops), "show": show,
-                      "crop": os.path.basename(crops[show]),
-                      "contrast": round(float(proteins[show].astype(np.float32).std()), 3)})
+                      "crop": os.path.basename(candidates[best]),
+                      "contrast": round(float(protein.std()), 3)})
 
     idx = pd.DataFrame(index)
     arrays["index"] = idx.to_csv(index=False)
