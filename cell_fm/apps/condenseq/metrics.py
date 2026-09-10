@@ -15,6 +15,12 @@ sequences.
 import numpy as np
 import pandas as pd
 
+# NumPy 2 renamed trapz to trapezoid; the old spelling still resolves there but raises a
+# DeprecationWarning, and NumPy 1 has only trapz. Pick whichever exists, once, at import.
+# The alternative was a notebook aliasing np.trapz onto the numpy module before importing
+# this one, which works right up until something else imports numpy first.
+_trapezoid = getattr(np, "trapezoid", None) or np.trapz
+
 
 def moving_average(y, window: int) -> np.ndarray:
     """Centred rolling mean, shrinking the window at the edges rather than padding."""
@@ -39,7 +45,7 @@ def integral(xs: np.ndarray, ys: np.ndarray) -> float:
     if xs.shape[0] < 2:
         return 0.0
 
-    return float(np.trapz(ys, xs))
+    return float(_trapezoid(ys, xs))
 
 
 def _prepare(df: pd.DataFrame, window_size: int, use_log_scale: bool):
