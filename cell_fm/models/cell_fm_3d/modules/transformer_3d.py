@@ -185,10 +185,11 @@ class SD3Transformer3DModel(nn.Module):
         self,
         hidden_states: torch.Tensor,
         encoder_hidden_states: torch.Tensor,
-        pooled_projections: torch.Tensor,
-        timestep: torch.Tensor,
+        temb: torch.Tensor,
         encoder_attention_mask: torch.Tensor = None,
     ) -> torch.Tensor:
+        # temb is self.time_text_embed(timestep, pooled_projections); the caller computes it so the
+        # ResBlocks around this transformer can share it.
         # Published to the attention processors for this forward; always rewritten, never stale.
         self.encoder_attention_mask = (
             encoder_attention_mask.bool() if encoder_attention_mask is not None else None
@@ -196,7 +197,6 @@ class SD3Transformer3DModel(nn.Module):
 
         # hidden_states: (B, C, D, H, W)
         hidden_states = self.pos_embed(hidden_states)                            # (B, N, D_model)
-        temb = self.time_text_embed(timestep, pooled_projections)
         encoder_hidden_states = self.context_embedder(encoder_hidden_states)
 
         for block in self.transformer_blocks:

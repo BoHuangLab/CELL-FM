@@ -65,6 +65,12 @@ class CELLFM3DConfig(PretrainedConfig):
     use_latent_skip: bool = False
     skip_channels: int = 64
 
+    # Timestep-conditioned ResBlocks per stage around SD3 (needs use_latent_skip; 0 = linear
+    # stem/head). They start as the identity, so checkpoints trained without them load exactly.
+    res_blocks_per_stage: int = 0
+    # Recompute the blocks in backward instead of storing their full-resolution 3-D activations.
+    res_block_checkpointing: bool = True
+
     # EMA
     use_ema: bool = False
     ema_decay: float = 0.9999

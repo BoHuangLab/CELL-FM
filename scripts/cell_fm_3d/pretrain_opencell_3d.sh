@@ -47,6 +47,9 @@ export WANDB_PROJECT=CELL-FM-3D
 # UNet skip around SD3
 [ -z "${skip_channels}" ] && skip_channels=64
 
+# Timestep-conditioned ResBlocks around SD3 (0 = linear stem/head)
+[ -z "${res_blocks_per_stage}" ] && res_blocks_per_stage=2
+
 # EMA
 [ -z "${ema_decay}" ] && ema_decay=0.9999
 [ -z "${ema_inv_gamma}" ] && ema_inv_gamma=1.0
@@ -108,6 +111,7 @@ python -m torch.distributed.run $DISTRIBUTED_ARGS cell_fm/tasks/cell_fm_3d/pretr
             --down_channels $down_channels \
             --use_latent_skip \
             --skip_channels $skip_channels \
+            --res_blocks_per_stage $res_blocks_per_stage \
             --use_ema \
             --ema_decay $ema_decay \
             --ema_inv_gamma $ema_inv_gamma \

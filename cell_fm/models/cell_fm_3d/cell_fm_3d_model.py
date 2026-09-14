@@ -5,6 +5,7 @@ from copy import deepcopy
 
 import torch
 import torch.nn as nn
+from torch.utils.checkpoint import checkpoint
 
 from transformers import PreTrainedModel
 
@@ -16,7 +17,7 @@ from cell_fm.pipeline.utils import CELLFMOutput
 from cell_fm.logging import logger
 
 from .cell_fm_3d_config import CELLFM3DConfig
-from .modules import SD3Transformer3DModel, CondConvNet3D
+from .modules import SD3Transformer3DModel, CondConvNet3D, ResBlock3D
 
 
 # The transport runs on t in [0, 1], but the sinusoidal timestep embedding SD3 uses internally
@@ -279,6 +280,35 @@ class CELLFM3D(nn.Module):
                 2 * config.skip_channels, config.latent_channels, kernel_size=3, padding=1
             )
 
+        # The convs around SD3 are linear and ignore t: each token decodes its 8x4x4 latent voxels
+        # linearly, and the high-res skip is the same filter of x_t at every timestep. These
+        # ResBlocks add nonlinear, timestep-conditioned processing at both resolutions. They and
+        # out_skip_proj start at zero, so a checkpoint trained without them loads and reproduces its
+        # outputs exactly; res_blocks_per_stage=0 keeps the original linear stem/head.
+        n_blocks = config.res_blocks_per_stage
+        if n_blocks > 0 and not config.use_latent_skip:
+            raise ValueError("res_blocks_per_stage > 0 requires use_latent_skip")
+        cond_dim = config.num_attention_heads * config.attention_head_dim
+
+        def res_blocks(channels):
+            return nn.ModuleList([ResBlock3D(channels, cond_dim) for _ in range(n_blocks)])
+
+        self.in_blocks = res_blocks(config.skip_channels)      # after in_conv, (d_lat, h_lat, w_lat)
+        self.down_blocks = res_blocks(config.down_channels)    # after latent_downsample, (d_sd, h_sd, w_sd)
+        self.up_blocks = res_blocks(config.down_channels)      # before latent_upsample, (d_sd, h_sd, w_sd)
+        self.out_blocks = res_blocks(config.skip_channels)     # before out_conv, (d_lat, h_lat, w_lat)
+
+        # Adds the high-res skip to the out_blocks input, so they see x_t detail and not only SD3's output.
+        self.out_skip_proj = None
+        if n_blocks > 0:
+            self.out_skip_proj = nn.Conv3d(config.skip_channels, config.skip_channels, kernel_size=1)
+            nn.init.zeros_(self.out_skip_proj.weight)
+            nn.init.zeros_(self.out_skip_proj.bias)
+
+        # Not named gradient_checkpointing: HF Trainer reads that attribute as model-wide
+        # checkpointing and would switch DDP's find_unused_parameters off.
+        self.res_block_checkpointing = config.res_block_checkpointing
+
         # ESM-C embeddings go straight to the transformer. No adapter in between: SD3's
         # context_embedder is already an affine map on this tensor, so a Linear here would collapse
         # into it, and its AdaLayerNormZero re-normalizes the context at every block entry, so a
@@ -295,6 +325,18 @@ class CELLFM3D(nn.Module):
             config.encoder_hidden_size,
             config.esm_fixed_embedding,
         )
+
+    def _run_res_blocks(
+        self, blocks: nn.ModuleList, x: torch.Tensor, temb: torch.Tensor
+    ) -> torch.Tensor:
+        for block in blocks:
+            # Full-resolution 3-D activations dominate memory; recomputing a block in backward
+            # costs one extra forward of it.
+            if self.res_block_checkpointing and self.training and torch.is_grad_enabled():
+                x = checkpoint(block, x, temb, use_reentrant=False)
+            else:
+                x = block(x, temb)
+        return x
 
     def forward(
         self,
@@ -317,25 +359,32 @@ class CELLFM3D(nn.Module):
         seq_weight = seq_mask.unsqueeze(-1).to(seq_embeds.dtype)                # (B, T, 1)
         pooled_seq = (seq_embeds * seq_weight).sum(dim=1) / seq_weight.sum(dim=1).clamp(min=1.0)
 
+        # SD3's timestep + pooled-sequence embedding, shared by the transformer and the ResBlocks.
+        temb = self.img_generator.time_text_embed(t_cond, pooled_seq)           # (B, inner_dim)
+
         cell_img_conv = self.cond_conv(cell_img)                                # (B, cond_C, d_lat, h_lat, w_lat)
         x = torch.cat([protein_img_latent, cell_img_conv], dim=1)               # (B, latent+cond_C, d_lat, h_lat, w_lat)
 
         skip = None
         if self.use_latent_skip:
-            x = skip = self.in_conv(x)                                          # (B, skip_C, d_lat, h_lat, w_lat)
+            x = self.in_conv(x)                                                 # (B, skip_C, d_lat, h_lat, w_lat)
+            x = skip = self._run_res_blocks(self.in_blocks, x, temb)
         x = self.latent_downsample(x)                                           # (B, down_C, d_sd, h_sd, w_sd)
+        x = self._run_res_blocks(self.down_blocks, x, temb)
 
         x = self.img_generator(
             hidden_states=x,
             encoder_hidden_states=seq_embeds,
-            pooled_projections=pooled_seq,
-            timestep=t_cond,
+            temb=temb,
             encoder_attention_mask=seq_mask,
         )                                                                      # (B, down_C, d_sd, h_sd, w_sd)
 
+        x = self._run_res_blocks(self.up_blocks, x, temb)
         x = self.latent_upsample(x)                                             # (B, up_out, d_lat, h_lat, w_lat)
 
         if self.use_latent_skip:
+            if self.out_skip_proj is not None:
+                x = self._run_res_blocks(self.out_blocks, x + self.out_skip_proj(skip), temb)
             x = self.out_conv(torch.cat([x, skip], dim=1))                      # (B, latent, d_lat, h_lat, w_lat)
 
         return x

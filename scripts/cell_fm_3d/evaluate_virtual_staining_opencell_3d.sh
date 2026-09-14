@@ -39,6 +39,10 @@ ulimit -c unlimited
 # UNet skip around SD3
 [ -z "${skip_channels}" ] && skip_channels=64
 
+# Timestep-conditioned ResBlocks around SD3 (0 = linear stem/head). Must match the checkpoint's
+# run; checkpoints trained without blocks give identical outputs with any value.
+[ -z "${res_blocks_per_stage}" ] && res_blocks_per_stage=2
+
 # Image generator (SD3-3D)
 [ -z "${img_generator_num_layers}" ] && img_generator_num_layers=24
 [ -z "${attention_head_dim}" ] && attention_head_dim=64
@@ -74,6 +78,7 @@ python cell_fm/tasks/cell_fm_3d/virtual_staining_opencell_3d.py \
             --down_channels $down_channels \
             --use_latent_skip \
             --skip_channels $skip_channels \
+            --res_blocks_per_stage $res_blocks_per_stage \
             --esm_embedding $esm_embedding \
             --encoder_hidden_size $encoder_hidden_size \
             --max_protein_sequence_len $max_protein_sequence_len \
