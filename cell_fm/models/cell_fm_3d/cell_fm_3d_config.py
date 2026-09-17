@@ -37,8 +37,8 @@ class CELLFM3DConfig(PretrainedConfig):
 
     # 3D spatial parameters
     input_spatial_size: str = '48,192,192'   # D,H,W of raw protein volume
-    patch_d: int = 4                          # depth patch size in latent space
-    patch_size: int = 8                       # H/W patch size in latent space
+    patch_d: int = 4                          # SD3 depth patch, at the UNet's lowest resolution
+    patch_size: int = 2                       # SD3 H/W patch, at the UNet's lowest resolution
 
     # Cell image conditioning
     cell_image: str = 'nucl'
@@ -58,18 +58,13 @@ class CELLFM3DConfig(PretrainedConfig):
     num_attention_heads: int = 16
     qk_norm: str = 'rms_norm'  # 'rms_norm' (SD3.5 default), 'fp32_layer_norm', or 'none'
 
-    # Latent downsample (before SD3) / upsample (after SD3)
-    down_channels: int = 64
-
-    # UNet skip around SD3
-    use_latent_skip: bool = False
-    skip_channels: int = 64
-
-    # Timestep-conditioned ResBlocks per stage around SD3 (needs use_latent_skip; 0 = linear
-    # stem/head). They start as the identity, so checkpoints trained without them load exactly.
-    res_blocks_per_stage: int = 0
-    # Recompute the blocks in backward instead of storing their full-resolution 3-D activations.
-    res_block_checkpointing: bool = True
+    # UNet around SD3: widths per resolution level, from the latent down to SD3's input, so
+    # len - 1 is the number of 2x down/upsamples. Each level has unet_layers_per_block ResBlocks
+    # on each side.
+    unet_block_out_channels: str = '64,128'
+    unet_layers_per_block: int = 2
+    # Recompute the ResBlocks in backward instead of storing their full-resolution 3-D activations.
+    unet_checkpointing: bool = True
 
     # EMA
     use_ema: bool = False
@@ -124,3 +119,7 @@ class CELLFM3DConfig(PretrainedConfig):
         self.cond_out_channels = kwargs.get("cond_out_channels", self.cond_out_channels)
         if not isinstance(self.cond_out_channels, list):
             self.cond_out_channels = [int(c) for c in self.cond_out_channels.split(',')]
+
+        self.unet_block_out_channels = kwargs.get("unet_block_out_channels", self.unet_block_out_channels)
+        if not isinstance(self.unet_block_out_channels, list):
+            self.unet_block_out_channels = [int(c) for c in self.unet_block_out_channels.split(',')]

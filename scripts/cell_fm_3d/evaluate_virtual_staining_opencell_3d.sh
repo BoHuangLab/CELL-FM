@@ -20,7 +20,7 @@ ulimit -c unlimited
 [ -z "${norm_num_groups}" ] && norm_num_groups=32
 [ -z "${layers_per_block}" ] && layers_per_block=2
 
-# 3D patch embedding
+# SD3 patch at the UNet's lowest resolution (12x48x48 -> 3x24x24 = 1728 tokens)
 [ -z "${patch_d}" ] && patch_d=4
 [ -z "${patch_size}" ] && patch_size=2
 
@@ -33,15 +33,10 @@ ulimit -c unlimited
 [ -z "${cell_image}" ] && cell_image='nucl'
 [ -z "${cond_out_channels}" ] && cond_out_channels='32'
 
-# Latent downsample / upsample around SD3
-[ -z "${down_channels}" ] && down_channels=128
-
-# UNet skip around SD3
-[ -z "${skip_channels}" ] && skip_channels=64
-
-# Timestep-conditioned ResBlocks around SD3 (0 = linear stem/head). Must match the checkpoint's
-# run; checkpoints trained without blocks give identical outputs with any value.
-[ -z "${res_blocks_per_stage}" ] && res_blocks_per_stage=2
+# UNet around SD3: width per level (latent 24x96x96 -> 12x48x48), ResBlocks per level.
+# Must match the run that wrote the checkpoint.
+[ -z "${unet_block_out_channels}" ] && unet_block_out_channels='64,128'
+[ -z "${unet_layers_per_block}" ] && unet_layers_per_block=2
 
 # Image generator (SD3-3D)
 [ -z "${img_generator_num_layers}" ] && img_generator_num_layers=24
@@ -75,10 +70,8 @@ python cell_fm/tasks/cell_fm_3d/virtual_staining_opencell_3d.py \
             --patch_size $patch_size \
             --cell_image $cell_image \
             --cond_out_channels $cond_out_channels \
-            --down_channels $down_channels \
-            --use_latent_skip \
-            --skip_channels $skip_channels \
-            --res_blocks_per_stage $res_blocks_per_stage \
+            --unet_block_out_channels $unet_block_out_channels \
+            --unet_layers_per_block $unet_layers_per_block \
             --esm_embedding $esm_embedding \
             --encoder_hidden_size $encoder_hidden_size \
             --max_protein_sequence_len $max_protein_sequence_len \

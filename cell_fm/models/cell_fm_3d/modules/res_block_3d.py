@@ -9,8 +9,7 @@ class ResBlock3D(nn.Module):
     """3-D residual block conditioned on SD3's embedding (timestep + pooled sequence).
 
     The embedding scale-shifts the second GroupNorm, as in ADM. `conv2` starts at zero, so a new
-    block is the identity: blocks can be added to a trained CELLFM3D without changing its output
-    until fine-tuning moves them.
+    block is the identity.
     """
 
     def __init__(self, channels: int, cond_dim: int):

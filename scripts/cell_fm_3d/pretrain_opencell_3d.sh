@@ -27,7 +27,7 @@ export WANDB_PROJECT=CELL-FM-3D
 [ -z "${norm_num_groups}" ] && norm_num_groups=32
 [ -z "${layers_per_block}" ] && layers_per_block=2
 
-# 3D patch embedding
+# SD3 patch at the UNet's lowest resolution (12x48x48 -> 3x24x24 = 1728 tokens)
 [ -z "${patch_d}" ] && patch_d=4
 [ -z "${patch_size}" ] && patch_size=2
 
@@ -41,14 +41,9 @@ export WANDB_PROJECT=CELL-FM-3D
 [ -z "${cell_image}" ] && cell_image='nucl'
 [ -z "${cond_out_channels}" ] && cond_out_channels='32'
 
-# Latent downsample / upsample around SD3
-[ -z "${down_channels}" ] && down_channels=128
-
-# UNet skip around SD3
-[ -z "${skip_channels}" ] && skip_channels=64
-
-# Timestep-conditioned ResBlocks around SD3 (0 = linear stem/head)
-[ -z "${res_blocks_per_stage}" ] && res_blocks_per_stage=2
+# UNet around SD3: width per level (latent 24x96x96 -> 12x48x48), ResBlocks per level
+[ -z "${unet_block_out_channels}" ] && unet_block_out_channels='64,128'
+[ -z "${unet_layers_per_block}" ] && unet_layers_per_block=2
 
 # EMA
 [ -z "${ema_decay}" ] && ema_decay=0.9999
@@ -108,10 +103,8 @@ python -m torch.distributed.run $DISTRIBUTED_ARGS cell_fm/tasks/cell_fm_3d/pretr
             --patch_size $patch_size \
             --cell_image $cell_image \
             --cond_out_channels $cond_out_channels \
-            --down_channels $down_channels \
-            --use_latent_skip \
-            --skip_channels $skip_channels \
-            --res_blocks_per_stage $res_blocks_per_stage \
+            --unet_block_out_channels $unet_block_out_channels \
+            --unet_layers_per_block $unet_layers_per_block \
             --use_ema \
             --ema_decay $ema_decay \
             --ema_inv_gamma $ema_inv_gamma \
