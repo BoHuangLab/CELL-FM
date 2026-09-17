@@ -36,7 +36,7 @@ cell_fm/tasks_local/
 scripts_local/
 
 huggingface_space
-# Build products of notebooks/tools/build_hpa_assets.py. They are derived from the
-# cluster HPA data and published to the hpa/ prefix of the weights repo, so they are
-# regenerated rather than tracked.
-notebooks/tools/assets/
+# Lab-internal tooling: the asset builders read cluster data under /hpc/reference, and
+# upload_weights.py publishes the checkpoints and the model card to Hugging Face. What
+# these scripts produce is published; the scripts themselves are not part of the repo.
+notebooks/tools/
