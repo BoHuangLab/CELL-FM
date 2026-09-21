@@ -4,11 +4,12 @@
 context, it generates the fluorescence image that protein would give; from an image, it
 generates sequences consistent with it.
 
-Code for *Virtual experiments bridge sequence and microscopy with generative models*
+Code for [*Virtual experiments bridge sequence and microscopy with generative models*](https://www.biorxiv.org/content/10.64898/2026.09.13.751243v1)
 (Dihan Zheng, Kibeom Hong, Bo Huang).
 
 | | |
 |---|---|
+| Paper | [bioRxiv, doi:10.64898/2026.09.13.751243](https://www.biorxiv.org/content/10.64898/2026.09.13.751243v1) |
 | Weights | [huggingface.co/BoHuangLab/CELL-FM](https://huggingface.co/BoHuangLab/CELL-FM) |
 
 ## Virtual experiments
