@@ -17,9 +17,9 @@ from cell_fm.data.opencell_crop_data.locations import all_locations
 from .collater import collate_fn
 
 
-def _normalize_volume(vol: np.ndarray) -> np.ndarray:
-    """Percentile clip then min-max normalize to [0, 1]."""
-    lo, hi = np.percentile(vol, 1), np.percentile(vol, 99)
+def _normalize_volume(vol: np.ndarray, p_lo: float = 0.1, p_hi: float = 99.9) -> np.ndarray:
+    """Percentile clip (p_lo, p_hi) then min-max normalize to [0, 1]."""
+    lo, hi = np.percentile(vol, p_lo), np.percentile(vol, p_hi)
     vol = np.clip(vol, lo, hi)
     denom = hi - lo
     if denom < 1e-8:
