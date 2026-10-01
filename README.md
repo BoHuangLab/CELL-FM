@@ -83,6 +83,21 @@ Notes on the notebooks' dependency pins are in [`notebooks/README.md`](notebooks
 | [`scripts/`](scripts) | Launch scripts for training and evaluation |
 | [`notebooks/`](notebooks) | Application notebooks |
 
+## Citation
+
+If you use CELL-FM, please cite:
+
+```bibtex
+@article{zheng2026virtual,
+  title   = {Virtual experiments bridge sequence and microscopy with generative models},
+  author  = {Zheng, Dihan and Hong, Kibeom and Huang, Bo},
+  journal = {bioRxiv},
+  year    = {2026},
+  doi     = {10.64898/2026.09.13.751243},
+  url     = {https://www.biorxiv.org/content/10.64898/2026.09.13.751243v1}
+}
+```
+
 ## License
 
 [MIT](LICENSE)
