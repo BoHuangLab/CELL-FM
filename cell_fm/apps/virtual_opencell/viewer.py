@@ -377,6 +377,9 @@ CSS = """
 #virtual-opencell .vo-settings-label { font-size: 16px; color: #182026; margin: 6px 0 -6px 0; }
 
 /* sample strip: white frame, cyan when active (roi-thumbnail-*) */
+/* the gallery block clips to its height, so the grid must scroll inside it rather than overflow */
+#virtual-opencell .vo-thumbnails .gallery-container { height: 100%; }
+#virtual-opencell .vo-thumbnails .grid-wrap { height: 100%; overflow-y: auto; }
 #virtual-opencell .vo-thumbnails .grid-container { grid-template-columns: repeat(var(--grid-cols), minmax(0, 1fr)) !important; }
 #virtual-opencell .vo-thumbnails .thumbnail-item { border: 3px solid #fff; border-radius: 5px; box-shadow: none; }
 #virtual-opencell .vo-thumbnails .thumbnail-item:hover { opacity: 0.7; }
