@@ -221,7 +221,7 @@ class Result:
     aac: float                       # area above the curve (reentrant dissolution)
     no_reentrant_auc: float
     c_sat: float
-    images: np.ndarray = field(repr=False, default=None)   # (K, 160, 160) sample panel
+    images: np.ndarray = field(repr=False, default=None)   # (N, 160, 160) every generated image
     image_intensities: np.ndarray = field(repr=False, default=None)
 
 
@@ -324,7 +324,8 @@ def run(sequence, num_images=NUM_IMAGES, num_steps=NUM_STEPS, batch_size=BATCH_S
 
     intensities = intensity_ladder(num_images).numpy()
     _, window, stats = summarise(intensities, predictions, num_images)
-    panel, panel_x = sample_panel(images, intensities)
+    # every image, in ladder order, so the gallery shows all of them
+    panel, panel_x = sample_panel(images, intensities, k=num_images)
 
     return Result(
         sequence=sequence,

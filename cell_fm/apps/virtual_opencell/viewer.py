@@ -153,24 +153,47 @@ def umap_data():
     return xy, labels, genes, backdrop
 
 
-def umap_figure(gene: str):
-    """The map of every protein's samples, coloured by OpenCell localization, with `gene` outlined."""
+@lru_cache(maxsize=1)
+def _protein_centres():
+    """(names, centres): every protein, labelled at the mean of its points as in the paper figure."""
+    xy, _, genes, _ = umap_data()
+    starts = np.flatnonzero(np.r_[True, genes[1:] != genes[:-1]])
+    centres = np.add.reduceat(xy, starts, axis=0) / np.diff(np.r_[starts, len(genes)])[:, None]
+    return genes[starts], centres.round(2)
+
+
+def umap_figure(gene: str, full: bool = False):
+    """The map of every protein's samples, coloured by OpenCell localization, with `gene` outlined.
+
+    The panel map draws the backdrop subsample; full=True draws all 93,510 points and names every
+    protein, like umap_embedding_selected_all.svg (about 2 MB). An empty `gene` outlines nothing.
+    """
     xy, labels, genes, backdrop = umap_data()
+    points = np.arange(len(genes)) if full else backdrop
     selected = np.flatnonzero(genes == gene)
     fig = go.Figure()
 
     # multilocalizing proteins underneath, as in the paper figures; NA (unannotated) last
-    names = sorted(set(labels[backdrop]) - {"Multilocalizing", "NA"})
+    names = sorted(set(labels[points]) - {"Multilocalizing", "NA"})
     for label in ["Multilocalizing"] + names + ["NA"]:
-        idx = backdrop[labels[backdrop] == label]
+        idx = points[labels[points] == label]
         if not len(idx):
             continue
         name = _localization_name(label)
+        size = (2 if full else 3) if label == "Multilocalizing" else (3 if full else 4)
         fig.add_trace(go.Scattergl(
             x=xy[idx, 0].round(2), y=xy[idx, 1].round(2), mode="markers", name=name,
-            marker=dict(color=LOCATION_COLORS.get(label, "#999999"), size=3 if label == "Multilocalizing" else 4,
+            marker=dict(color=LOCATION_COLORS.get(label, "#999999"), size=size,
                         opacity=0.45 if len(selected) else 0.8),
             customdata=genes[idx], hovertemplate=f"<b>%{{customdata}}</b><br>{name}<extra></extra>",
+        ))
+
+    if full:
+        # fixed-size labels: zooming in pulls them apart until each one is readable
+        protein_names, centres = _protein_centres()
+        fig.add_trace(go.Scatter(
+            x=centres[:, 0], y=centres[:, 1], mode="text", text=protein_names, showlegend=False,
+            textfont=dict(size=8, color="#000"), hoverinfo="skip",
         ))
 
     if len(selected):
@@ -187,7 +210,7 @@ def umap_figure(gene: str):
     # no axes, and the UMAP1 / UMAP2 corner of the paper figures
     corner = dict(type="line", xref="paper", yref="paper", line=dict(color="#000", width=2))
     fig.update_layout(
-        height=600, margin=dict(l=0, r=0, t=0, b=0), paper_bgcolor="#fff", plot_bgcolor="#fff",
+        height=1000 if full else 600, margin=dict(l=0, r=0, t=0, b=0), paper_bgcolor="#fff", plot_bgcolor="#fff",
         xaxis=dict(visible=False), yaxis=dict(visible=False, scaleanchor="x"),
         legend=dict(orientation="h", y=-0.02, yanchor="top", font=dict(size=11), itemsizing="constant"),
         shapes=[dict(corner, x0=0.02, x1=0.14, y0=0.02, y1=0.02), dict(corner, x0=0.02, x1=0.02, y0=0.02, y1=0.14)],
@@ -267,7 +290,8 @@ UMAP_HTML = f"""
   <div class="vo-section-header">Virtual staining map</div>
   <div class="vo-section-caption">Each dot is one generated image, placed by UMAP of its embedding from CELL-FM's
   OpenCell ViT and coloured by OpenCell's localization of the real cell line. The background shows
-  {UMAP_POINTS_PER_PROTEIN} images per protein; the selected protein shows all of its images, outlined in black.</div>
+  {UMAP_POINTS_PER_PROTEIN} images per protein; the selected protein shows all of its images, outlined in black.
+  The full map, with every image and every protein named, is below.</div>
 </div>
 """
 
