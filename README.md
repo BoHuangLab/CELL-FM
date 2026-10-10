@@ -11,6 +11,8 @@ Code for [*Virtual experiments bridge sequence and microscopy with generative mo
 |---|---|
 | Paper | [bioRxiv, doi:10.64898/2026.09.13.751243](https://www.biorxiv.org/content/10.64898/2026.09.13.751243v1) |
 | Weights | [huggingface.co/BoHuangLab/CELL-FM](https://huggingface.co/BoHuangLab/CELL-FM) |
+| Demo | [huggingface.co/spaces/BoHuangLab/CELL-FM](https://huggingface.co/spaces/BoHuangLab/CELL-FM) — condensate titration and Virtual OpenCell in the browser |
+| Data | [huggingface.co/datasets/BoHuangLab/CELL-FM](https://huggingface.co/datasets/BoHuangLab/CELL-FM) — virtual staining of 1,276 OpenCell proteins |
 
 ## Virtual experiments
 
