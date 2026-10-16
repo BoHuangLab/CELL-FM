@@ -413,3 +413,9 @@ CSS = """
   background: #eee; border-radius: 6px; padding: 10px 16px; margin-top: 10px; font-size: 13px; color: #333;
 }
 """
+
+
+def scoped_css(scope: str) -> str:
+    """The same look for another container: every rule above is written against #virtual-opencell,
+    so re-pointing them gives a second tab OpenCell's style without touching this one's."""
+    return CSS.replace("#virtual-opencell", scope)
