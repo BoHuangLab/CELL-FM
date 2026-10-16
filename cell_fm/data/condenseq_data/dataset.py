@@ -292,3 +292,71 @@ class CondenSeqProteinImageOnlyDataset(Dataset):
     def collate(samples):
         imgs = torch.stack([s["protein_img"] for s in samples], 0)
         return {"batched_data": {"protein_img": imgs}}
+
+
+class CondenSeqIDRImageDataset(CondenSeqDataset):
+    """
+    Single-cell images labeled by IDR id, for the ViT IDR classifier (vit_cls).
+    Each item is one random cell of one IDR; the label is the IDR's row position in the split csv.
+    """
+    def get_image_paths(self, meta_data):
+        if self.img_type == 'GFP':
+            barcode_paths = meta_data['GFP_paths'].split(',')
+        elif self.img_type == 'SNAP':
+            barcode_paths = meta_data['SNAP_paths'].split(',')
+
+        image_paths = []
+        for barcode_path in barcode_paths:
+            for gfp_path in sorted(glob(os.path.join(self.data_path, barcode_path.strip(), '*_GFP.tif'))):
+                stem = gfp_path[:-len('_GFP.tif')]
+                image_paths.append((gfp_path, stem + '_DAPI.tif', stem + '_mask.npy'))
+
+        assert len(image_paths) > 0, f"No images found for {self.split_key} split with img_type {self.img_type} with index {meta_data['index']}."
+
+        return image_paths
+
+    def __getitem__(self, index: int) -> dict:
+        image_paths = self.get_image_paths(self.meta_data.iloc[index])
+
+        item = {}
+        item['protein_img'], item['nucleus_img'], _, _ = self.get_img(random.choice(image_paths))
+        item['protein_idx'] = torch.Tensor([index]).long()
+
+        return item
+
+    @staticmethod
+    def collate(samples):
+        protein_img = torch.stack([s["protein_img"] for s in samples], 0)
+        nucleus_img = torch.stack([s["nucleus_img"] for s in samples], 0)
+        protein_idx = torch.stack([s["protein_idx"] for s in samples], 0)
+
+        return {"batched_data": {"protein_img": protein_img, "nucleus_img": nucleus_img, "protein_idx": protein_idx}}
+
+
+class CondenSeqIDRImageEmbedDataset(CondenSeqIDRImageDataset):
+    """
+    All cells (or up to max_cells_per_idr random cells) of every IDR in the split, for embedding.
+    """
+    def __init__(self, args, split_key, max_cells_per_idr=-1, seed=0) -> None:
+        super().__init__(args, split_key)
+
+        rng = random.Random(seed)
+
+        self.cells = []
+        for index in range(len(self.meta_data)):
+            image_paths = self.get_image_paths(self.meta_data.iloc[index])
+            if 0 < max_cells_per_idr < len(image_paths):
+                image_paths = rng.sample(image_paths, max_cells_per_idr)
+            self.cells.extend((image_path, index) for image_path in image_paths)
+
+    def __getitem__(self, idx: int) -> dict:
+        image_path, index = self.cells[idx]
+
+        item = {}
+        item['protein_img'], item['nucleus_img'], _, _ = self.get_img(image_path)
+        item['protein_idx'] = torch.Tensor([index]).long()
+
+        return item
+
+    def __len__(self) -> int:
+        return len(self.cells)

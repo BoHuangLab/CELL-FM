@@ -64,6 +64,23 @@ NUM_STEPS = 100
 BATCH_SIZE = 64
 
 
+@lru_cache(maxsize=1)
+def count_download() -> None:
+    """Fetch the model repo's config.json, once per process.
+
+    The Hub counts this repo's downloads by requests for that file, not for the .bin
+    files, so this is what puts a Space start or a notebook run on the model page. A
+    mirror set through CELLFM_MODEL_REPO may not carry the file; that is not an error.
+    """
+    from huggingface_hub import hf_hub_download
+    from huggingface_hub.utils import EntryNotFoundError
+
+    try:
+        hf_hub_download(repo_id=MODEL_REPO, filename="config.json")
+    except EntryNotFoundError:
+        pass
+
+
 def resolve_weights(filename: str) -> str:
     """Local directory if CELLFM_LOCAL_WEIGHTS is set, else pull from the model repo."""
     if LOCAL_WEIGHTS:
@@ -74,6 +91,7 @@ def resolve_weights(filename: str) -> str:
 
     from huggingface_hub import hf_hub_download
 
+    count_download()
     return hf_hub_download(repo_id=MODEL_REPO, filename=filename)
 
 
