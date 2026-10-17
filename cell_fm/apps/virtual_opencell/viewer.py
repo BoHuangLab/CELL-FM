@@ -21,6 +21,15 @@ read them from disk instead.
 
 The map of all samples is opencell/vs_umap_embedding.npz in the weights repo: one UMAP point
 per sample (93,510, grouped by protein), embedded with opencell/vit.bin.
+
+The 3D virtual staining (CELL-FM 3D) is in the same repo, 64 samples for every protein:
+
+    OpenCell/virtual_staining_3d/<GENE>/<NNNN>.tif    (48, 2, 192, 192) uint16, z first
+    OpenCell/virtual_staining_3d_thumbnails/<GENE>.jpg
+
+A stack is about 7 MB, so a protein's 64 are fetched one at a time, when opened, and the sample
+strip comes from the thumbnail sheet (notebooks/tools/build_virtual_opencell_3d_thumbnails.py).
+Stacks are shown one z slice at a time, like OpenCell's "2D slice" view. There is no 3D map yet.
 """
 
 import html
@@ -32,10 +41,19 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import tifffile
+from PIL import Image
 
 DATASET_REPO = os.environ.get("VIRTUAL_OPENCELL_REPO", "BoHuangLab/CELL-FM")
 LOCAL_DIR = os.environ.get("VIRTUAL_OPENCELL_LOCAL_DIR", "")
 IMAGE_DIR = "OpenCell/virtual_staining"
+IMAGE_DIR_3D = "OpenCell/virtual_staining_3d"
+THUMBNAIL_DIR_3D = "OpenCell/virtual_staining_3d_thumbnails"
+SAMPLES_3D = 64
+SLICES_3D = 48
+# Crops are centred on the nucleus' 3D centroid, so its centre slice is the default view
+DEFAULT_SLICE_3D = SLICES_3D // 2
+THUMBNAIL_SIZE_3D = 96
+THUMBNAIL_COLUMNS_3D = 8
 
 MODEL_REPO = os.environ.get("CELLFM_MODEL_REPO", "BoHuangLab/CELL-FM")
 UMAP_FILE = "opencell/vs_umap_embedding.npz"
@@ -106,28 +124,61 @@ def load_samples(gene: str, n_samples: int):
     return np.stack([tifffile.imread(p) for p in paths]), tuple(paths)
 
 
-def _scale(channel: np.ndarray, low: float, high: float, gamma: float) -> np.ndarray:
-    """One channel to [0, 1]: auto-contrast, then OpenCell's intensity range (%) and gamma."""
-    lo, hi = np.percentile(channel, AUTO_PERCENTILES)
+def _download(name: str) -> str:
+    if LOCAL_DIR:
+        return os.path.join(LOCAL_DIR, name)
+    from huggingface_hub import hf_hub_download
+
+    return hf_hub_download(repo_id=DATASET_REPO, filename=name, repo_type="dataset")
+
+
+def sample_file_3d(gene: str, index: int) -> str:
+    """Local path of one 3D sample (0-based index), downloading it first unless reading from disk."""
+    return _download(f"{IMAGE_DIR_3D}/{gene}/{index + 1:04d}.tif")
+
+
+@lru_cache(maxsize=32)
+def load_sample_3d(gene: str, index: int):
+    """(stack, limits): stack is (Z, 2, H, W) uint16; limits are each channel's auto-contrast
+    window over the whole stack, so a slice keeps the same contrast as the others."""
+    stack = tifffile.imread(sample_file_3d(gene, index))
+    limits = tuple(tuple(np.percentile(stack[:, c], AUTO_PERCENTILES)) for c in range(stack.shape[1]))
+    return stack, limits
+
+
+@lru_cache(maxsize=64)
+def thumbnails_3d(gene: str) -> list:
+    """The sample strip of a protein's 3D stacks: its centre slices, cut from the thumbnail sheet."""
+    sheet = np.asarray(Image.open(_download(f"{THUMBNAIL_DIR_3D}/{gene}.jpg")).convert("RGB"))
+    size = THUMBNAIL_SIZE_3D
+    return [sheet[r:r + size, c:c + size] for r in range(0, sheet.shape[0], size)
+            for c in range(0, sheet.shape[1], size)]
+
+
+def _scale(channel: np.ndarray, low: float, high: float, gamma: float, limits=None) -> np.ndarray:
+    """One channel to [0, 1]: auto-contrast (over `limits` if given, else this image's own
+    percentiles), then OpenCell's intensity range (%) and gamma."""
+    lo, hi = limits if limits is not None else np.percentile(channel, AUTO_PERCENTILES)
     x = (channel.astype(np.float32) - lo) / max(hi - lo, 1.0)
     low, high = low / 100.0, max(high, low + 1.0) / 100.0
     return np.clip((x - low) / (high - low), 0.0, 1.0) ** gamma
 
 
 def render(sample: np.ndarray, channel: str = "Both",
-           nucleus=(0, 100, 1.0), target=(0, 100, 1.0)) -> np.ndarray:
-    """A (2, H, W) sample as an (H, W, 3) uint8 image; nucleus/target are (min %, max %, gamma)."""
+           nucleus=(0, 100, 1.0), target=(0, 100, 1.0), limits=(None, None)) -> np.ndarray:
+    """A (2, H, W) sample as an (H, W, 3) uint8 image; nucleus/target are (min %, max %, gamma),
+    and limits each channel's auto-contrast window (None: from this image)."""
     rgb = np.zeros(sample.shape[1:] + (3,), dtype=np.float32)
     if channel in ("Nucleus", "Both"):
-        rgb += _scale(sample[0], *nucleus)[..., None] * NUCLEUS_RGB
+        rgb += _scale(sample[0], *nucleus, limits=limits[0])[..., None] * NUCLEUS_RGB
     if channel in ("Target", "Both"):
-        rgb += _scale(sample[1], *target)[..., None] * TARGET_RGB
+        rgb += _scale(sample[1], *target, limits=limits[1])[..., None] * TARGET_RGB
     return (np.clip(rgb, 0.0, 1.0) * 255).astype(np.uint8)
 
 
-def thumbnails(stack: np.ndarray) -> list:
+def thumbnails(stack: np.ndarray, size: int = THUMBNAIL_SIZE) -> list:
     """Both channels at default settings, downsized for the sample strip."""
-    step = max(stack.shape[-1] // THUMBNAIL_SIZE, 1)
+    step = max(stack.shape[-1] // size, 1)
     return [render(sample)[::step, ::step] for sample in stack]
 
 
@@ -227,7 +278,7 @@ def _metadata_item(label: str, value: str) -> str:
             f'<div class="vo-metadata-value">{value}</div></div>')
 
 
-def target_html(gene: str, row: pd.Series) -> str:
+def target_html(gene: str, row: pd.Series, three_d: bool = False) -> str:
     """The left-hand panel of an OpenCell target page: name, identifiers, localization."""
     esc = html.escape
     uniprot, ensg, cid = row["uniprot_id"], row["ensg_id"], row["opencell_cid"]
@@ -258,7 +309,7 @@ def target_html(gene: str, row: pd.Series) -> str:
 <div class="vo-target">
   <div class="vo-target-name">{esc(gene)}</div>
   <div class="vo-protein-description">{esc(name)}</div>
-  <div class="vo-status">CELL-FM virtual staining &middot; {int(row['n_samples'])} samples</div>
+  <div class="vo-status">CELL-FM {"3D " if three_d else ""}virtual staining &middot; {SAMPLES_3D if three_d else int(row['n_samples'])} samples</div>
   <div class="vo-metadata">{''.join(items)}</div>
   <div class="vo-section-header">Protein localization</div>
   <div class="vo-section-caption">OpenCell's annotation of the real cell line; bar height is the grade</div>
