@@ -12,7 +12,7 @@ Code for [*Virtual experiments bridge sequence and microscopy with generative mo
 | Paper | [bioRxiv, doi:10.64898/2026.09.13.751243](https://www.biorxiv.org/content/10.64898/2026.09.13.751243v1) |
 | Weights | [huggingface.co/BoHuangLab/CELL-FM](https://huggingface.co/BoHuangLab/CELL-FM) |
 | Hugging Face demo | [huggingface.co/spaces/BoHuangLab/CELL-FM](https://huggingface.co/spaces/BoHuangLab/CELL-FM) |
-| Google Colab demo | [colab.research.google.com/github/BoHuangLab/CELL-FM](https://colab.research.google.com/github/BoHuangLab/CELL-FM/blob/master) |
+| Google Colab demo | [`notebooks/`](notebooks) — four notebooks, each with an *Open in Colab* badge |
 
 ## Virtual experiments
 
